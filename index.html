@@ -178,6 +178,13 @@
       color: #991b1b;
       border: 1.5px solid #fca5a5;
     }
+    #feedback.unsimplified {
+      display: block;
+      min-height: 5rem;
+      background: #fef9c3;
+      color: #713f12;
+      border: 1.5px solid #fde047;
+    }
     #feedback strong { display: block; font-size: 1.05rem; margin-bottom: 0.4rem; }
     .steps { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; }
     .step { display: flex; align-items: center; gap: 0.4rem; padding-left: 1.2rem; }
@@ -1499,10 +1506,19 @@
     return rational(Math.round(val * 100), 100).display; // fallback
   }
 
+  // Returns 'correct', 'unsimplified', or false.
+  // 'unsimplified': numerically correct fraction but not in lowest terms (e.g. 4/6 for 2/3).
   function checkAnswer(userRaw, correctAnswer) {
     const user = parseAnswer(userRaw);
     if (isNaN(user)) return false;
-    return Math.abs(user - correctAnswer) < 0.001;
+    if (Math.abs(user - correctAnswer) >= 0.001) return false;
+    // Check if the user typed a reducible fraction
+    const m = userRaw.replace(/\s+/g, '').match(/^(-?\d+)\/([1-9]\d*)$/);
+    if (m) {
+      const n = Math.abs(parseInt(m[1], 10)), d = parseInt(m[2], 10);
+      if (gcd(n, d) > 1) return 'unsimplified';
+    }
+    return 'correct';
   }
 
   // ════════════════════════════════════════════════
@@ -1549,10 +1565,15 @@
   const EXPL_KEY = 'math_expl_detailed';
   elExplanationMode.checked = localStorage.getItem(EXPL_KEY) !== 'false';
 
+  function problemRecap() {
+    return steps(currentProblem.display);
+  }
+
   function currentExpl() {
-    return elExplanationMode.checked
+    const expl = elExplanationMode.checked
       ? currentProblem.explanation
       : (currentProblem.explanationSimple || currentProblem.explanation);
+    return problemRecap() + (expl || '');
   }
 
   elExplanationMode.addEventListener('change', () => {
@@ -1560,9 +1581,11 @@
     // Re-render explanation if feedback is already visible
     if (!currentProblem || elFeedback.className === '') return;
     if (elFeedback.className === 'correct') {
-      elFeedback.innerHTML = `<strong>¡Correcto!</strong>${currentExpl() || ''}`;
+      elFeedback.innerHTML = `<strong>¡Correcto!</strong>${currentExpl()}`;
+    } else if (elFeedback.className === 'unsimplified') {
+      elFeedback.innerHTML = `<strong>¡Correcto!</strong> (La fracción se puede simplificar: x = ${displayAnswer(currentProblem.answer)})${currentExpl()}`;
     } else {
-      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${displayAnswer(currentProblem.answer)}</strong>${currentExpl() || ''}`;
+      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${displayAnswer(currentProblem.answer)}</strong>${currentExpl()}`;
     }
   });
   const elDisplay   = document.getElementById('answer-display');
@@ -1662,20 +1685,24 @@
     setKeypadDisabled(true);
     elSubmit.style.display = 'none';
 
-    const correct = checkAnswer(raw, currentProblem.answer);
+    const result = checkAnswer(raw, currentProblem.answer);
 
-    if (correct) {
+    if (result === 'correct') {
       registerCorrect();
       refreshHeader();
       elFeedback.className = 'correct';
-      elFeedback.innerHTML = `<strong>¡Correcto!</strong>${currentExpl() || ''}`;
-      elNextRow.classList.add('visible');
+      elFeedback.innerHTML = `<strong>¡Correcto!</strong>${currentExpl()}`;
+    } else if (result === 'unsimplified') {
+      registerCorrect();
+      refreshHeader();
+      elFeedback.className = 'unsimplified';
+      elFeedback.innerHTML = `<strong>¡Correcto!</strong> (La fracción se puede simplificar: x = ${displayAnswer(currentProblem.answer)})${currentExpl()}`;
     } else {
       registerWrong();
       elFeedback.className = 'wrong';
-      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${displayAnswer(currentProblem.answer)}</strong>${currentExpl() || ''}`;
-      elNextRow.classList.add('visible');
+      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${displayAnswer(currentProblem.answer)}</strong>${currentExpl()}`;
     }
+    elNextRow.classList.add('visible');
   }
 
   function updateLevelMenu() {

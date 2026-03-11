@@ -321,6 +321,18 @@
     return `<div class="steps">${lines.map(l => `<div class="step">${l}</div>`).join('')}</div>`;
   }
 
+  // Returns the division steps for "coefExpr / divisor = numerator / divisor → x = result".
+  // Skips the fraction line when divisor is 1 (trivial). Keeps it for -1 and all other values.
+  function divSteps(coefExpr, divisor, numerator) {
+    const result = numerator / divisor;
+    if (divisor === 1) return [`x = ${result}`];
+    return [
+      `dividimos ambos lados entre ${divisor}`,
+      `${frac(coefExpr, divisor)} = ${frac(numerator, divisor)}`,
+      `x = ${result}`
+    ];
+  }
+
   // ── Level 1: one-step  ───────────────────────────
   // x + b = c  or  ax = c
   function genLevel1() {
@@ -347,11 +359,7 @@
       return {
         display: `${coef(a)} = ${c}`,
         answer: x,
-        explanation: steps(
-          `dividimos ambos lados entre ${a}`,
-          `${frac(coef(a), a)} = ${frac(c, a)}`,
-          `x = ${x}`
-        )
+        explanation: steps(...divSteps(coef(a), a, c))
       };
     }
   }
@@ -373,9 +381,7 @@
         step1,
         `${coef(a)} + ${b} ${neg} = ${c} ${neg}`,
         `${coef(a)} = ${c - b}`,
-        `dividimos ambos lados entre ${a}`,
-        `${frac(coef(a), a)} = ${frac(c - b, a)}`,
-        `x = ${x}`
+        ...divSteps(coef(a), a, c - b)
       )
     };
   }
@@ -398,9 +404,7 @@
           step1,
           `${coef(a)} + ${b} ${neg} = ${c} ${neg}`,
           `${coef(a)} = ${c - b}`,
-          `dividimos ambos lados entre ${a}`,
-          `${frac(coef(a), a)} = ${frac(c - b, a)}`,
-          `x = ${x}`
+          ...divSteps(coef(a), a, c - b)
         )
       };
     } else {
@@ -468,9 +472,7 @@
           stepC,
           `${coef(b)} ${sign(c)} ${negC} = ${d / a} ${negC}`,
           `${coef(b)} = ${d / a - c}`,
-          `dividimos ambos lados entre ${b}`,
-          `${frac(coef(b), b)} = ${frac(d / a - c, b)}`,
-          `x = ${x}`
+          ...divSteps(coef(b), b, d / a - c)
         )
       };
     }
@@ -506,9 +508,7 @@
         moveB,
         `${coef(ac)} ${sign(b)} ${bNeg} = ${d} ${bNeg}`,
         `${coef(ac)} = ${db}`,
-        `dividimos ambos lados entre ${ac}`,
-        `${frac(coef(ac), ac)} = ${frac(db, ac)}`,
-        `x = ${x}`
+        ...divSteps(coef(ac), ac, db)
       )
     };
   }
@@ -538,9 +538,7 @@
           moveConst,
           `${coef(total)} ${sign(ac)} ${negAc} = ${e} ${negAc}`,
           `${coef(total)} = ${rhs}`,
-          `dividimos ambos lados entre ${total}`,
-          `${frac(coef(total), total)} = ${frac(rhs, total)}`,
-          `x = ${x}`
+          ...divSteps(coef(total), total, rhs)
         )
       };
     } else {
@@ -568,9 +566,7 @@
           moveConst2,
           `${coef(ac)} ${sign(ab)} ${abNeg} = ${cd} ${abNeg}`,
           `${coef(ac)} = ${rhs2}`,
-          `dividimos ambos lados entre ${ac}`,
-          `${frac(coef(ac), ac)} = ${frac(rhs2, ac)}`,
-          `x = ${x}`
+          ...divSteps(coef(ac), ac, rhs2)
         )
       };
     }

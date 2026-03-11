@@ -319,7 +319,7 @@
     return {
       display: `${lhs} = ${c}`,
       answer: x,
-      explanation: `Resta ${b} a ambos lados: ${coef(a)} = ${c - b}. Luego divide entre ${a}: x = ${x}`
+      explanation: `${b >= 0 ? `Resta ${b}` : `Suma ${Math.abs(b)}`} a ambos lados: ${coef(a)} = ${c - b}. Luego divide entre ${a}: x = ${x}`
     };
   }
 
@@ -358,7 +358,7 @@
   function genLevel4() {
     if (Math.random() < 0.5) {
       // a(x + b) = c
-      const a = rndNZ(6);
+      const a = rnd(2, 6);
       const b = rnd(-8, 8, true);
       const x = rnd(-8, 8, true);
       const c = a * (x + b);
@@ -391,6 +391,7 @@
     const x = rnd(-8, 8, true);
     const b = rnd(-10, 10, true);
     const d = (a - c) * x + b;
+    if (d === 0) return genLevel5(); // retry to avoid "3x + 0" on RHS
     const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
     const rhs = `${coef(c)} ${sign(d)}`;
     return {

@@ -497,7 +497,7 @@
           `${frac('x', d)} + ${b} ${neg} = ${c} ${neg}`,
           `${frac('x', d)} = ${c - b}`,
           `multiplicamos ambos lados por ${d}`,
-          `${frac('x', d)} × ${d} = ${c - b} × ${d}`,
+          `${frac('x', d)} · ${d} = ${c - b} · ${d}`,
           `x = ${x}`
         )
       });
@@ -744,7 +744,7 @@
         answer: x,
         explanation: steps(
           `multiplicamos ambos lados por ${d}`,
-          `${frac(`${coef(a)} ${sign(b)}`, d)} × ${d} = ${c} × ${d}`,
+          `${frac(`${coef(a)} ${sign(b)}`, d)} · ${d} = ${c} · ${d}`,
           `${frac(`(${coef(a)} ${sign(b)}) · ${d}`, d)} = ${c} · ${d}`,
           `${coef(a)} ${sign(b)} = ${cd}`,
           moveB,
@@ -776,7 +776,7 @@
           `${axFrac} ${sign(b)} ${negB} = ${c} ${negB}`,
           `${axFrac} = ${cb}`,
           `multiplicamos ambos lados por ${d}`,
-          `${axFrac} × ${d} = ${cb} × ${d}`,
+          `${axFrac} · ${d} = ${cb} · ${d}`,
           `${frac(`${coef(a)} · ${d}`, d)} = ${cb} · ${d}`,
           `${coef(a)} = ${rhs}`,
           ...divSteps(coef(a), a, rhs)
@@ -813,7 +813,7 @@
       answer: x,
       explanation: steps(
         `multiplicamos ambos lados por ${d}`,
-        `${frac(`${coef(a)} ${sign(b)}`, d)} × ${d} = (${coef(cCoef)} ${sign(e)}) × ${d}`,
+        `${frac(`${coef(a)} ${sign(b)}`, d)} · ${d} = (${coef(cCoef)} ${sign(e)}) · ${d}`,
         `${frac(`(${coef(a)} ${sign(b)}) · ${d}`, d)} = (${coef(cCoef)} ${sign(e)}) · ${d}`,
         `${coef(a)} ${sign(b)} = ${coef(cd)} ${sign(ed)}`,
         moveB,
@@ -871,7 +871,7 @@
         explanation: steps(
           `mínimo común múltiplo de ${d} y ${f}: ${lcmDF}`,
           `multiplicamos ambos lados por ${lcmDF}`,
-          `${frac(`${coef(a)} ${sign(b)}`, d)} × ${lcmDF} = ${frac(`${coef(c)} ${sign(e)}`, f)} × ${lcmDF}`,
+          `${frac(`${coef(a)} ${sign(b)}`, d)} · ${lcmDF} = ${frac(`${coef(c)} ${sign(e)}`, f)} · ${lcmDF}`,
           `${frac(`(${coef(a)} ${sign(b)}) · ${lcmDF}`, d)} = ${frac(`(${coef(c)} ${sign(e)}) · ${lcmDF}`, f)}`,
           `${multL}·(${coef(a)} ${sign(b)}) = ${multR}·(${coef(c)} ${sign(e)})`,
           `${coef(fa)} ${sign(fb)} = ${coef(dc)} ${sign(de)}`,
@@ -916,7 +916,7 @@
         answer: x,
         explanation: steps(
           `multiplicamos ambos lados por ${d}`,
-          `${frac(`${a}(${inner2})`, d)} × ${d} = (${coef(e)} ${sign(f)}) × ${d}`,
+          `${frac(`${a}(${inner2})`, d)} · ${d} = (${coef(e)} ${sign(f)}) · ${d}`,
           `${frac(`${a}(${inner2}) · ${d}`, d)} = (${coef(e)} ${sign(f)}) · ${d}`,
           `${a}(${inner2}) = ${coef(de)} ${sign(df)}`,
           `expandimos: ${a}(${inner2})`,
@@ -963,7 +963,7 @@
         answer: x,
         explanation: steps(
           `multiplicamos ambos lados por ${d}`,
-          `${frac(`${coef(a)} ${sign(b)}`, d)} × ${d} = ${e}(${inner2}) × ${d}`,
+          `${frac(`${coef(a)} ${sign(b)}`, d)} · ${d} = ${e}(${inner2}) · ${d}`,
           `${frac(`(${coef(a)} ${sign(b)}) · ${d}`, d)} = ${e}(${inner2}) · ${d}`,
           `${coef(a)} ${sign(b)} = ${de}(${inner2})`,
           `expandimos: ${de}(${inner2})`,
@@ -1012,7 +1012,7 @@
       answer: x,
       explanation: steps(
         `multiplicamos ambos lados por ${d}`,
-        `(${axFrac} ${cxStr}) × ${d} = (${coef(e)} ${sign(f)}) × ${d}`,
+        `(${axFrac} ${cxStr}) · ${d} = (${coef(e)} ${sign(f)}) · ${d}`,
         `(${frac(`(${coef(a)} ${sign(b)}) · ${d}`, d)} ${cxStr}) = (${coef(e)} ${sign(f)}) · ${d}`,
         `${coef(a)} ${sign(b)} ${sign(cd)}x = ${coef(de)} ${sign(df)}`,
         `combinamos términos con x: ${coef(a)} ${sign(cd)}x = ${coef(acd)}`,

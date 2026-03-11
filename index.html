@@ -1468,8 +1468,22 @@
   // Persist explanation toggle
   const EXPL_KEY = 'math_expl_detailed';
   elExplanationMode.checked = localStorage.getItem(EXPL_KEY) !== 'false';
+
+  function currentExpl() {
+    return elExplanationMode.checked
+      ? currentProblem.explanation
+      : (currentProblem.explanationSimple || currentProblem.explanation);
+  }
+
   elExplanationMode.addEventListener('change', () => {
     localStorage.setItem(EXPL_KEY, elExplanationMode.checked);
+    // Re-render explanation if feedback is already visible
+    if (!currentProblem || elFeedback.className === '') return;
+    if (elFeedback.className === 'correct') {
+      elFeedback.innerHTML = `<strong>¡Correcto!</strong>${currentExpl() || ''}`;
+    } else {
+      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${displayAnswer(currentProblem.answer)}</strong>${currentExpl() || ''}`;
+    }
   });
   const elDisplay   = document.getElementById('answer-display');
   const elKeypad    = document.getElementById('keypad');
@@ -1574,14 +1588,12 @@
       registerCorrect();
       refreshHeader();
       elFeedback.className = 'correct';
-      const expl = elExplanationMode.checked ? currentProblem.explanation : (currentProblem.explanationSimple || currentProblem.explanation);
-      elFeedback.innerHTML = `<strong>¡Correcto!</strong>${expl || ''}`;
+      elFeedback.innerHTML = `<strong>¡Correcto!</strong>${currentExpl() || ''}`;
       elNext.style.display = 'block';
     } else {
       registerWrong();
       elFeedback.className = 'wrong';
-      const explW = elExplanationMode.checked ? currentProblem.explanation : (currentProblem.explanationSimple || currentProblem.explanation);
-      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${displayAnswer(currentProblem.answer)}</strong>${explW || ''}`;
+      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${displayAnswer(currentProblem.answer)}</strong>${currentExpl() || ''}`;
       elNext.style.display = 'block';
     }
   }

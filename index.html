@@ -473,7 +473,7 @@
       const b = rnd(-10, 10, true);
       const x = rnd(-5, 5, true) * d;
       const c = x / d + b;
-      const lhs = b >= 0 ? `x/${d} + ${b}` : `x/${d} - ${Math.abs(b)}`;
+      const lhs = b >= 0 ? `${frac('x', d)} + ${b}` : `${frac('x', d)} - ${Math.abs(b)}`;
       const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       return {

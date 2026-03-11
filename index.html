@@ -277,6 +277,7 @@
   function markPlayedToday() {
     const today = todayStr();
     if (state.lastDate !== today) {
+      if (!state.lastDate) state.streak = 1; // first time ever playing
       state.lastDate = today;
       saveState();
     }
@@ -320,27 +321,26 @@
     return `<div class="steps">${lines.map(l => `<div class="step">${l}</div>`).join('')}</div>`;
   }
 
-  // ── Level 1–2: one-step  ─────────────────────────
+  // ── Level 1: one-step  ───────────────────────────
   // x + b = c  or  ax = c
   function genLevel1() {
     if (Math.random() < 0.5) {
-      // x + b = c  →  x = c - b
       const b = rnd(-10, 10, true);
       const x = rnd(-10, 10, true);
       const c = x + b;
       const expr = b >= 0 ? `x + ${b}` : `x - ${Math.abs(b)}`;
       const op = b >= 0 ? `restamos ${b}` : `sumamos ${Math.abs(b)}`;
+      const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       return {
         display: `${expr} = ${c}`,
         answer: x,
         explanation: steps(
           `${op} a ambos lados`,
-          `x = ${c} ${b >= 0 ? '−' : '+'} ${Math.abs(b)}`,
+          `x + ${b} ${neg} = ${c} ${neg}`,
           `x = ${x}`
         )
       };
     } else {
-      // ax = c  →  x = c/a
       const a = rndNZ(10);
       const x = rnd(-10, 10, true);
       const c = a * x;
@@ -356,7 +356,7 @@
     }
   }
 
-  // ── Level 3–4: two-step  ─────────────────────────
+  // ── Level 2a: two-step  ──────────────────────────
   // ax + b = c
   function genLevel2() {
     const a = rndNZ(8);
@@ -365,11 +365,13 @@
     const c = a * x + b;
     const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
     const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
+    const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
     return {
       display: `${lhs} = ${c}`,
       answer: x,
       explanation: steps(
         step1,
+        `${coef(a)} + ${b} ${neg} = ${c} ${neg}`,
         `${coef(a)} = ${c - b}`,
         `dividimos ambos lados entre ${a}`,
         `${frac(coef(a), a)} = ${frac(c - b, a)}`,
@@ -378,8 +380,8 @@
     };
   }
 
-  // ── Level 5–6: negatives & fractions  ────────────
-  // ax + b = c  with fractions: x/d + b = c
+  // ── Level 2b: negatives & fractions  ─────────────
+  // ax + b = c  or  x/d + b = c
   function genLevel3() {
     if (Math.random() < 0.5) {
       const a = rndNZ(10);
@@ -388,11 +390,13 @@
       const c = a * x + b;
       const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
       const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
+      const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       return {
         display: `${lhs} = ${c}`,
         answer: x,
         explanation: steps(
           step1,
+          `${coef(a)} + ${b} ${neg} = ${c} ${neg}`,
           `${coef(a)} = ${c - b}`,
           `dividimos ambos lados entre ${a}`,
           `${frac(coef(a), a)} = ${frac(c - b, a)}`,
@@ -400,37 +404,39 @@
         )
       };
     } else {
-      // x/d + b = c  →  x = (c - b) * d
       const d = rnd(2, 6);
       const b = rnd(-10, 10, true);
       const x = rnd(-5, 5, true) * d;
       const c = x / d + b;
       const lhs = b >= 0 ? `x/${d} + ${b}` : `x/${d} - ${Math.abs(b)}`;
       const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
+      const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       return {
         display: `${lhs} = ${c}`,
         answer: x,
         explanation: steps(
           step1,
+          `${frac('x', d)} + ${b} ${neg} = ${c} ${neg}`,
           `${frac('x', d)} = ${c - b}`,
           `multiplicamos ambos lados por ${d}`,
-          `x = ${c - b} × ${d}`,
+          `${frac('x', d)} × ${d} = ${c - b} × ${d}`,
           `x = ${x}`
         )
       };
     }
   }
 
-  // ── Level 7–8: parentheses  ──────────────────────
+  // ── Level 3a: parentheses  ───────────────────────
   // a(x + b) = c  or  a(bx + c) = d
   function genLevel4() {
     if (Math.random() < 0.5) {
-      // a(x + b) = c
       const a = rnd(2, 6);
       const b = rnd(-8, 8, true);
       const x = rnd(-8, 8, true);
       const c = a * (x + b);
       const xPlusB = `x ${sign(b)}`;
+      const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
+      const stepB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       return {
         display: `${a}(${xPlusB}) = ${c}`,
         answer: x,
@@ -438,19 +444,20 @@
           `dividimos ambos lados entre ${a}`,
           `${frac(`${a}(${xPlusB})`, a)} = ${frac(c, a)}`,
           `${xPlusB} = ${c / a}`,
-          b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`,
+          stepB,
+          `x ${sign(b)} ${negB} = ${c / a} ${negB}`,
           `x = ${x}`
         )
       };
     } else {
-      // a(bx + c) = d
       const a = rnd(2, 5);
       const b = rndNZ(4);
       const c = rnd(-6, 6, true);
       const x = rnd(-5, 5, true);
       const d = a * (b * x + c);
       const inner = `${coef(b)} ${sign(c)}`;
-      const step1b = b >= 0 ? `restamos ${c} a ambos lados` : `sumamos ${Math.abs(c)} a ambos lados`;
+      const negC = c >= 0 ? `− ${c}` : `+ ${Math.abs(c)}`;
+      const stepC = c >= 0 ? `restamos ${c} a ambos lados` : `sumamos ${Math.abs(c)} a ambos lados`;
       return {
         display: `${a}(${inner}) = ${d}`,
         answer: x,
@@ -458,7 +465,8 @@
           `dividimos ambos lados entre ${a}`,
           `${frac(`${a}(${inner})`, a)} = ${frac(d, a)}`,
           `${inner} = ${d / a}`,
-          step1b,
+          stepC,
+          `${coef(b)} ${sign(c)} ${negC} = ${d / a} ${negC}`,
           `${coef(b)} = ${d / a - c}`,
           `dividimos ambos lados entre ${b}`,
           `${frac(coef(b), b)} = ${frac(d / a - c, b)}`,
@@ -468,7 +476,7 @@
     }
   }
 
-  // ── Level 9–10: variables on both sides  ─────────
+  // ── Level 3b: variables on both sides  ───────────
   // ax + b = cx + d
   function genLevel5() {
     const a = rndNZ(8);
@@ -480,17 +488,23 @@
     if (d === 0) return genLevel5();
     const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
     const rhs = `${coef(c)} ${sign(d)}`;
+    // Step: move x terms — show intermediate line with cancellation
     const moveX = c > 0 ? `restamos ${coef(c)} a ambos lados` : `sumamos ${coef(Math.abs(c))} a ambos lados`;
-    const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
+    const cNeg = c > 0 ? `− ${coef(c)}` : `+ ${coef(Math.abs(c))}`;
     const ac = a - c;
     const db = d - b;
+    // Step: move constant — show intermediate line
+    const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
+    const bNeg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
     return {
       display: `${lhs} = ${rhs}`,
       answer: x,
       explanation: steps(
         moveX,
+        `${coef(a)} ${cNeg} + ${b} = ${coef(c)} ${cNeg} ${sign(d)}`,
         `${coef(ac)} ${sign(b)} = ${d}`,
         moveB,
+        `${coef(ac)} ${sign(b)} ${bNeg} = ${d} ${bNeg}`,
         `${coef(ac)} = ${db}`,
         `dividimos ambos lados entre ${ac}`,
         `${frac(coef(ac), ac)} = ${frac(db, ac)}`,
@@ -499,7 +513,7 @@
     };
   }
 
-  // ── Level 11+: combined complexity  ─────────────
+  // ── Level 4: combined complexity  ────────────────
   // a(bx + c) + dx = e  or  a(x + b) = c(x + d)
   function genLevel6() {
     if (Math.random() < 0.5) {
@@ -511,16 +525,18 @@
       const e = a * (b * x + c) + d * x;
       const dStr = d > 0 ? `+ ${d}x` : `- ${Math.abs(d)}x`;
       const ab = a * b, ac = a * c, total = ab + d, rhs = e - ac;
+      const negAc = ac >= 0 ? `− ${ac}` : `+ ${Math.abs(ac)}`;
       const moveConst = ac >= 0 ? `restamos ${ac} a ambos lados` : `sumamos ${Math.abs(ac)} a ambos lados`;
       return {
         display: `${a}(${coef(b)} ${sign(c)}) ${dStr} = ${e}`,
         answer: x,
         explanation: steps(
-          `expandimos el paréntesis: ${a}·(${coef(b)}) = ${coef(ab)}, ${a}·${c} = ${ac}`,
+          `expandimos: ${a}·${coef(b)} = ${coef(ab)},  ${a}·(${c}) = ${ac}`,
           `${coef(ab)} ${sign(ac)} ${dStr} = ${e}`,
           `combinamos términos con x: ${coef(ab)} ${dStr} = ${coef(total)}`,
           `${coef(total)} ${sign(ac)} = ${e}`,
           moveConst,
+          `${coef(total)} ${sign(ac)} ${negAc} = ${e} ${negAc}`,
           `${coef(total)} = ${rhs}`,
           `dividimos ambos lados entre ${total}`,
           `${frac(coef(total), total)} = ${frac(rhs, total)}`,
@@ -528,7 +544,6 @@
         )
       };
     } else {
-      // a(x + b) = c(x + d)
       const a = rnd(2, 6);
       let c;
       do { c = rnd(2, 6); } while (c === a);
@@ -538,7 +553,9 @@
       if (numerator % c !== 0) return genLevel6();
       const d = numerator / c;
       const ac = a - c, cd = c * d, ab = a * b, rhs2 = cd - ab;
+      const cNeg = c > 0 ? `− ${coef(c)}` : `+ ${coef(Math.abs(c))}`;
       const moveX = c > 0 ? `restamos ${coef(c)} a ambos lados` : `sumamos ${coef(Math.abs(c))} a ambos lados`;
+      const abNeg = ab >= 0 ? `− ${ab}` : `+ ${Math.abs(ab)}`;
       const moveConst2 = ab >= 0 ? `restamos ${ab} a ambos lados` : `sumamos ${Math.abs(ab)} a ambos lados`;
       return {
         display: `${a}(x ${sign(b)}) = ${c}(x ${sign(d)})`,
@@ -546,8 +563,10 @@
         explanation: steps(
           `expandimos: ${a}x ${sign(ab)} = ${c}x ${sign(cd)}`,
           moveX,
+          `${a}x ${cNeg} ${sign(ab)} = ${c}x ${cNeg} ${sign(cd)}`,
           `${coef(ac)} ${sign(ab)} = ${cd}`,
           moveConst2,
+          `${coef(ac)} ${sign(ab)} ${abNeg} = ${cd} ${abNeg}`,
           `${coef(ac)} = ${rhs2}`,
           `dividimos ambos lados entre ${ac}`,
           `${frac(coef(ac), ac)} = ${frac(rhs2, ac)}`,
@@ -557,13 +576,15 @@
     }
   }
 
-  // ── Dispatcher  ──────────────────────────────────
+  // ── Dispatcher (4 levels) ────────────────────────
+  // Level 1: one-step equations
+  // Level 2: two-step equations + fractions
+  // Level 3: parentheses + variables on both sides
+  // Level 4: combined complexity
   function generateProblem(level) {
-    if (level <= 2)  return genLevel1();
-    if (level <= 4)  return genLevel2();
-    if (level <= 6)  return genLevel3();
-    if (level <= 8)  return genLevel4();
-    if (level <= 10) return genLevel5();
+    if (level <= 1) return genLevel1();
+    if (level <= 2) return Math.random() < 0.5 ? genLevel2() : genLevel3();
+    if (level <= 3) return Math.random() < 0.5 ? genLevel4() : genLevel5();
     return genLevel6();
   }
 
@@ -594,7 +615,7 @@
   const CORRECT_FOR_LEVELUP = 10;
 
   function pointsForLevel(level) {
-    return level <= 2 ? 5 : level <= 4 ? 8 : level <= 6 ? 10 : level <= 8 ? 13 : level <= 10 ? 15 : 20;
+    return level <= 1 ? 5 : level <= 2 ? 10 : level <= 3 ? 15 : 20;
   }
 
   // Returns true if a level-up occurred
@@ -685,10 +706,10 @@
   }
 
   function pickLevel() {
-    const input = prompt(`Elige un nivel del 1 al 11 (nivel actual: ${state.level}):`, state.level);
+    const input = prompt(`Elige un nivel del 1 al 4 (nivel actual: ${state.level}):`, state.level);
     if (input === null) return; // cancelled
     const n = parseInt(input, 10);
-    if (!isNaN(n) && n >= 1 && n <= 11) {
+    if (!isNaN(n) && n >= 1 && n <= 4) {
       state.level = n;
       saveState();
       showProblem();

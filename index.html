@@ -268,6 +268,7 @@
         <button class="level-option" data-level="3" role="menuitem"><span class="level-dot"></span>Nivel 3 — paréntesis y dos lados</button>
         <button class="level-option" data-level="4" role="menuitem"><span class="level-dot"></span>Nivel 4 — complejidad combinada</button>
         <button class="level-option" data-level="5" role="menuitem"><span class="level-dot"></span>Nivel 5 — fracciones</button>
+        <button class="level-option" data-level="6" role="menuitem"><span class="level-dot"></span>Nivel 6 — desafío total</button>
       </div>
     </div>
     <div id="problem"></div>
@@ -730,6 +731,203 @@
     };
   }
 
+  // ── Level 6: desafío total  ──────────────────────
+  // Type A: (ax+b)/d = (cx+e)/f        — fractions both sides
+  // Type B: a(bx+c)/d = ex + f         — parenthesis inside fraction vs plain
+  // Type C: (ax+b)/d = e(cx+f)         — fraction vs parenthesis
+  // Type D: (ax+b)/d + cx = ex + f     — fraction + x-term vs plain
+  function genLevel8() {
+    const type = Math.floor(Math.random() * 4);
+
+    if (type === 0) {
+      // (ax+b)/d = (cx+e)/f
+      // multiply both sides by lcm(d,f): f*(ax+b) = d*(cx+e)
+      // fax + fb = dcx + de  →  (fa-dc)x = de - fb
+      const d = rnd(2, 6);
+      let f;
+      do { f = rnd(2, 6); } while (f === d);
+      const a = rndNZ(5);
+      let c;
+      do { c = rndNZ(5); } while (c === a);
+      const x = rnd(-6, 6, true);
+      const b = rnd(-8, 8, true);
+      // derive e so that (ax+b)/d = (cx+e)/f holds exactly
+      // e = f*(ax+b)/d - cx; need (ax+b) divisible by d
+      const lhsNum = a * x + b;
+      if (lhsNum % d !== 0) return genLevel8();
+      const lhsVal = lhsNum / d;       // = (cx+e)/f
+      // need cx+e = lhsVal*f, so e = lhsVal*f - cx
+      const e = lhsVal * f - c * x;
+      const fa = f * a, dc = d * c, fb = f * b, de = d * e;
+      const coefX = fa - dc;
+      if (coefX === 0) return genLevel8();
+      const constR = de - fb;
+      if (constR % coefX !== 0) return genLevel8();
+      // lcm for display step
+      function gcd(p, q) { return q === 0 ? p : gcd(q, p % q); }
+      const g = gcd(d, f), lcm = d * f / g;
+      const multL = lcm / d, multR = lcm / f;
+      const fbNeg = fb >= 0 ? `− ${fb}` : `+ ${Math.abs(fb)}`;
+      const moveB = fb >= 0 ? `restamos ${fb} a ambos lados` : `sumamos ${Math.abs(fb)} a ambos lados`;
+      const dcNeg = dc > 0 ? `− ${coef(dc)}` : `+ ${coef(Math.abs(dc))}`;
+      const moveX = dc > 0 ? `restamos ${coef(dc)} a ambos lados` : `sumamos ${coef(Math.abs(dc))} a ambos lados`;
+      return {
+        display: `${frac(`${coef(a)} ${sign(b)}`, d)} = ${frac(`${coef(c)} ${sign(e)}`, f)}`,
+        answer: x,
+        explanation: steps(
+          `multiplicamos ambos lados por ${lcm}`,
+          `${multL}·(${coef(a)} ${sign(b)}) = ${multR}·(${coef(c)} ${sign(e)})`,
+          `${coef(fa)} ${sign(fb)} = ${coef(dc)} ${sign(de)}`,
+          moveB,
+          `${coef(fa)} ${sign(fb)} ${fbNeg} = ${coef(dc)} ${sign(de)} ${fbNeg}`,
+          `${coef(fa)} = ${coef(dc)} ${sign(de - fb)}`,
+          moveX,
+          `${coef(fa)} ${dcNeg} = ${coef(dc)} ${dcNeg} ${sign(de - fb)}`,
+          `${coef(coefX)} = ${constR}`,
+          ...divSteps(coef(coefX), coefX, constR)
+        )
+      };
+    }
+
+    if (type === 1) {
+      // a(bx+c) / d = ex + f
+      // a*(bx+c) = d*(ex+f)  →  abx + ac = dex + df  →  (ab-de)x = df - ac
+      const d = rnd(2, 5);
+      const a = rnd(2, 5);
+      const b = rndNZ(4);
+      const c = rnd(-6, 6, true);
+      let e;
+      do { e = rndNZ(5); } while (e * d === a * b); // avoid coefX === 0
+      const x = rnd(-6, 6, true);
+      // derive f: a*(bx+c)/d = ex+f  →  f = a*(bx+c)/d - ex
+      const inner = a * (b * x + c);
+      if (inner % d !== 0) return genLevel8();
+      const lhsVal = inner / d;
+      const f = lhsVal - e * x;
+      const ab = a * b, ac = a * c, de = d * e, df = d * f;
+      const coefX = ab - de;
+      if (coefX === 0) return genLevel8();
+      const constR = df - ac;
+      if (constR % coefX !== 0) return genLevel8();
+      const acNeg = ac >= 0 ? `− ${ac}` : `+ ${Math.abs(ac)}`;
+      const moveC = ac >= 0 ? `restamos ${ac} a ambos lados` : `sumamos ${Math.abs(ac)} a ambos lados`;
+      const deNeg = de > 0 ? `− ${coef(de)}` : `+ ${coef(Math.abs(de))}`;
+      const moveX = de > 0 ? `restamos ${coef(de)} a ambos lados` : `sumamos ${coef(Math.abs(de))} a ambos lados`;
+      const inner2 = `${coef(b)} ${sign(c)}`;
+      return {
+        display: `${frac(`${a}(${inner2})`, d)} = ${coef(e)} ${sign(f)}`,
+        answer: x,
+        explanation: steps(
+          `multiplicamos ambos lados por ${d}`,
+          `${frac(`${a}(${inner2})`, d)} × ${d} = (${coef(e)} ${sign(f)}) × ${d}`,
+          `${a}(${inner2}) = ${coef(de)} ${sign(df)}`,
+          `expandimos: ${a}(${inner2})`,
+          `${coef(ab)} ${sign(ac)} = ${coef(de)} ${sign(df)}`,
+          moveC,
+          `${coef(ab)} ${sign(ac)} ${acNeg} = ${coef(de)} ${sign(df)} ${acNeg}`,
+          `${coef(ab)} = ${coef(de)} ${sign(df - ac)}`,
+          moveX,
+          `${coef(ab)} ${deNeg} = ${coef(de)} ${deNeg} ${sign(df - ac)}`,
+          `${coef(coefX)} = ${constR}`,
+          ...divSteps(coef(coefX), coefX, constR)
+        )
+      };
+    }
+
+    if (type === 2) {
+      // (ax+b)/d = e(cx+f)
+      // ax+b = d*e*(cx+f)  →  ax+b = decx + def  →  (a-dec)x = def - b
+      const d = rnd(2, 5);
+      const e = rnd(2, 4);
+      const de = d * e;
+      const a = rndNZ(5);
+      let c;
+      do { c = rndNZ(4); } while (a === de * c); // avoid coefX === 0
+      const x = rnd(-5, 5, true);
+      const b = rnd(-8, 8, true);
+      // derive f: (ax+b)/d = e*(cx+f)  →  f = (ax+b)/(d*e) - cx
+      const lhsNum = a * x + b;
+      if (lhsNum % de !== 0) return genLevel8();
+      const lhsVal = lhsNum / de;   // = cx + f
+      const f = lhsVal - c * x;
+      const dec = de * c, def_ = de * f;
+      const coefX = a - dec;
+      if (coefX === 0) return genLevel8();
+      const constR = def_ - b;
+      if (constR % coefX !== 0) return genLevel8();
+      const bNeg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
+      const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
+      const decNeg = dec > 0 ? `− ${coef(dec)}` : `+ ${coef(Math.abs(dec))}`;
+      const moveX = dec > 0 ? `restamos ${coef(dec)} a ambos lados` : `sumamos ${coef(Math.abs(dec))} a ambos lados`;
+      const inner2 = `${coef(c)} ${sign(f)}`;
+      return {
+        display: `${frac(`${coef(a)} ${sign(b)}`, d)} = ${e}(${inner2})`,
+        answer: x,
+        explanation: steps(
+          `multiplicamos ambos lados por ${d}`,
+          `${frac(`${coef(a)} ${sign(b)}`, d)} × ${d} = ${e}(${inner2}) × ${d}`,
+          `${coef(a)} ${sign(b)} = ${de}(${inner2})`,
+          `expandimos: ${de}(${inner2})`,
+          `${coef(a)} ${sign(b)} = ${coef(dec)} ${sign(def_)}`,
+          moveB,
+          `${coef(a)} ${sign(b)} ${bNeg} = ${coef(dec)} ${sign(def_)} ${bNeg}`,
+          `${coef(a)} = ${coef(dec)} ${sign(def_ - b)}`,
+          moveX,
+          `${coef(a)} ${decNeg} = ${coef(dec)} ${decNeg} ${sign(def_ - b)}`,
+          `${coef(coefX)} = ${constR}`,
+          ...divSteps(coef(coefX), coefX, constR)
+        )
+      };
+    }
+
+    // type === 3
+    // (ax+b)/d + cx = ex + f
+    // multiply by d: ax+b + cdx = dex + df  →  (a+cd)x + b = dex + df
+    // →  (a+cd-de)x = df - b
+    const d = rnd(2, 5);
+    const a = rndNZ(5);
+    const c = rndNZ(4);
+    let e;
+    do { e = rndNZ(5); } while (a + c * d === e * d); // avoid coefX === 0
+    const x = rnd(-6, 6, true);
+    const b = rnd(-8, 8, true);
+    // derive f: (ax+b)/d + cx = ex + f  →  f = (ax+b)/d + cx - ex
+    const lhsNum = a * x + b;
+    if (lhsNum % d !== 0) return genLevel8();
+    const lhsVal = lhsNum / d;
+    const f = lhsVal + c * x - e * x;
+    const cd = c * d, de = e * d, df = f * d;
+    const coefX = a + cd - de;
+    if (coefX === 0) return genLevel8();
+    const constR = df - b;
+    if (constR % coefX !== 0) return genLevel8();
+    const cxStr = c > 0 ? `+ ${coef(c)}` : `- ${coef(Math.abs(c))}`;
+    const axFrac = frac(`${coef(a)} ${sign(b)}`, d);
+    const bNeg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
+    const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
+    const deNeg = de > 0 ? `− ${coef(de)}` : `+ ${coef(Math.abs(de))}`;
+    const moveX = de > 0 ? `restamos ${coef(de)} a ambos lados` : `sumamos ${coef(Math.abs(de))} a ambos lados`;
+    const acd = a + cd;
+    return {
+      display: `${axFrac} ${cxStr} = ${coef(e)} ${sign(f)}`,
+      answer: x,
+      explanation: steps(
+        `multiplicamos ambos lados por ${d}`,
+        `(${axFrac} ${cxStr}) × ${d} = (${coef(e)} ${sign(f)}) × ${d}`,
+        `${coef(a)} ${sign(b)} ${sign(cd)}x = ${coef(de)} ${sign(df)}`,
+        `combinamos términos con x`,
+        `${coef(acd)} ${sign(b)} = ${coef(de)} ${sign(df)}`,
+        moveB,
+        `${coef(acd)} ${sign(b)} ${bNeg} = ${coef(de)} ${sign(df)} ${bNeg}`,
+        `${coef(acd)} = ${coef(de)} ${sign(df - b)}`,
+        moveX,
+        `${coef(acd)} ${deNeg} = ${coef(de)} ${deNeg} ${sign(df - b)}`,
+        `${coef(coefX)} = ${constR}`,
+        ...divSteps(coef(coefX), coefX, constR)
+      )
+    };
+  }
+
   // ── Dispatcher (5 levels) ────────────────────────
   // Level 1: one-step equations
   // Level 2: two-step equations + simple fractions
@@ -741,7 +939,8 @@
     if (level <= 2) return Math.random() < 0.5 ? genLevel2() : genLevel3();
     if (level <= 3) return Math.random() < 0.5 ? genLevel4() : genLevel5();
     if (level <= 4) return genLevel6();
-    return genLevel7();
+    if (level <= 5) return genLevel7();
+    return genLevel8();
   }
 
   // ════════════════════════════════════════════════
@@ -771,7 +970,7 @@
   const CORRECT_FOR_LEVELUP = 10;
 
   function pointsForLevel(level) {
-    return level <= 1 ? 5 : level <= 2 ? 10 : level <= 3 ? 15 : level <= 4 ? 20 : 25;
+    return level <= 1 ? 5 : level <= 2 ? 10 : level <= 3 ? 15 : level <= 4 ? 20 : level <= 5 ? 25 : 30;
   }
 
   // Returns true if a level-up occurred

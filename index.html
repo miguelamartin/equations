@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matemáticas</title>
+  <style>
+    /* ── Reset & base ─────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f0f4ff;
+      color: #1a1a2e;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    /* ── Header ───────────────────────────────────── */
+    header {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #4361ee;
+      color: white;
+      border-radius: 16px;
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 12px rgba(67,97,238,0.3);
+    }
+    header h1 { font-size: 1.2rem; font-weight: 700; }
+    .stats { display: flex; gap: 1rem; }
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.75rem;
+      opacity: 0.85;
+    }
+    .stat span { font-size: 1.1rem; font-weight: 700; opacity: 1; }
+
+    /* ── Main card ────────────────────────────────── */
+    main {
+      width: 100%;
+      max-width: 600px;
+      background: white;
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    .level-badge {
+      display: inline-block;
+      background: #e0e7ff;
+      color: #4361ee;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    #problem {
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      margin: 1.5rem 0;
+      letter-spacing: 0.02em;
+      min-height: 3rem;
+    }
+
+    /* ── Input row ────────────────────────────────── */
+    .input-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    #answer {
+      flex: 1;
+      font-size: 1.2rem;
+      padding: 0.65rem 1rem;
+      border: 2px solid #d1d5db;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    #answer:focus { border-color: #4361ee; }
+    #submit {
+      background: #4361ee;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 0.65rem 1.25rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #submit:hover { background: #3451d1; }
+    #submit:focus-visible,
+    #next:focus-visible,
+    #levelup button:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 2px;
+    }
+
+    /* ── Feedback ─────────────────────────────────── */
+    #feedback {
+      border-radius: 12px;
+      padding: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      display: none;
+    }
+    #feedback.correct {
+      display: block;
+      min-height: 5rem;
+      background: #d1fae5;
+      color: #065f46;
+      border: 1.5px solid #6ee7b7;
+    }
+    #feedback.wrong {
+      display: block;
+      min-height: 5rem;
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1.5px solid #fca5a5;
+    }
+    #feedback strong { display: block; font-size: 1.05rem; margin-bottom: 0.4rem; }
+
+    /* ── Next button ──────────────────────────────── */
+    #next {
+      display: none;
+      width: 100%;
+      margin-top: 1rem;
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #next:hover { background: #059669; }
+
+    /* ── Level-up overlay ─────────────────────────── */
+    #levelup {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(67,97,238,0.92);
+      color: white;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      z-index: 100;
+      gap: 0.5rem;
+    }
+    #levelup.show { display: flex; }
+    #levelup .emoji { font-size: 4rem; }
+    #levelup p { font-size: 1.1rem; font-weight: 400; margin-top: 0.5rem; opacity: 0.85; }
+    #levelup button {
+      margin-top: 1.5rem;
+      background: white;
+      color: #4361ee;
+      border: none;
+      border-radius: 10px;
+      padding: 0.65rem 2rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Álgebra</h1>
+    <div class="stats">
+      <div class="stat">Puntos<span id="hdr-points">0</span></div>
+      <div class="stat">Racha<span id="hdr-streak">0</span></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="level-badge">Nivel <span id="level-num">1</span></div>
+    <div id="problem"></div>
+    <div class="input-row">
+      <input id="answer" type="text" inputmode="decimal" placeholder="x = ?" autocomplete="off" aria-label="Tu respuesta" />
+      <button id="submit">Comprobar</button>
+    </div>
+    <div id="feedback"></div>
+    <button id="next">Siguiente &rarr;</button>
+  </main>
+
+  <div id="levelup">
+    <div class="emoji">&#127881;</div>
+    <div>Nivel <span id="lu-level"></span></div>
+    <p>Seguiste practicando y lo lograste!</p>
+    <button id="lu-close">Continuar</button>
+  </div>
+
+  <script>
+  // ════════════════════════════════════════════════
+  // STATE
+  // ════════════════════════════════════════════════
+  const STORAGE_KEY = 'math_app_v1';
+
+  function defaultState() {
+    return { points: 0, level: 1, correctCount: 0, streak: 0, lastDate: null };
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? Object.assign(defaultState(), JSON.parse(raw)) : defaultState();
+    } catch { return defaultState(); }
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function todayStr() {
+    return new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+  }
+
+  // Called once at load: reconciles streak based on last played date, then saves.
+  function updateStreak() {
+    if (!state.lastDate) return; // first time ever — streak stays 0
+    const today = todayStr();
+    if (state.lastDate === today) return; // already played today, nothing to do
+    const diffDays = Math.round((new Date(today) - new Date(state.lastDate)) / 86400000);
+    if (diffDays === 1) state.streak += 1;
+    else if (diffDays > 1) state.streak = 0;
+    state.lastDate = today;
+    saveState();
+  }
+
+  // Called on each interaction: records that the player played today.
+  // Streak logic is handled entirely by updateStreak() at load time.
+  function markPlayedToday() {
+    const today = todayStr();
+    if (state.lastDate !== today) {
+      state.lastDate = today;
+      saveState();
+    }
+  }
+
+  const state = loadState();
+  updateStreak();
+
+  // ════════════════════════════════════════════════
+  // PROBLEM GENERATOR
+  // ════════════════════════════════════════════════
+
+  // Returns a random integer in [min, max] excluding 0 if excludeZero=true
+  function rnd(min, max, excludeZero = false) {
+    let n;
+    do { n = Math.floor(Math.random() * (max - min + 1)) + min; }
+    while (excludeZero && n === 0);
+    return n;
+  }
+
+  // Returns a random non-zero integer in [-max, -1] ∪ [1, max]
+  function rndNZ(max) { return rnd(1, max) * (Math.random() < 0.5 ? 1 : -1); }
+
+  // Format coefficient: 1x -> "x", -1x -> "-x", 2x -> "2x"
+  function coef(c) {
+    if (c === 1) return 'x';
+    if (c === -1) return '-x';
+    return `${c}x`;
+  }
+
+  // Format sign for constant in expression: e.g. + 3 or - 3 (skips zero)
+  function sign(n) { return n > 0 ? `+ ${n}` : `- ${Math.abs(n)}`; }
+
+  // ── Level 1–2: one-step  ─────────────────────────
+  // x + b = c  or  ax = c
+  function genLevel1() {
+    if (Math.random() < 0.5) {
+      // x + b = c  →  x = c - b
+      const b = rnd(-10, 10, true);
+      const x = rnd(-10, 10, true);
+      const c = x + b;
+      const expr = b >= 0 ? `x + ${b}` : `x - ${Math.abs(b)}`;
+      return {
+        display: `${expr} = ${c}`,
+        answer: x,
+        explanation: `Despeja x: x = ${c} ${b >= 0 ? '-' : '+'} ${Math.abs(b)} = ${x}`
+      };
+    } else {
+      // ax = c  →  x = c/a
+      const a = rndNZ(10);
+      const x = rnd(-10, 10, true);
+      const c = a * x;
+      return {
+        display: `${coef(a)} = ${c}`,
+        answer: x,
+        explanation: `Divide ambos lados entre ${a}: x = ${c} ÷ ${a} = ${x}`
+      };
+    }
+  }
+
+  // ── Level 3–4: two-step  ─────────────────────────
+  // ax + b = c
+  function genLevel2() {
+    const a = rndNZ(8);
+    const b = rnd(-10, 10, true);
+    const x = rnd(-8, 8, true);
+    const c = a * x + b;
+    const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
+    return {
+      display: `${lhs} = ${c}`,
+      answer: x,
+      explanation: `Resta ${b} a ambos lados: ${coef(a)} = ${c - b}. Luego divide entre ${a}: x = ${x}`
+    };
+  }
+
+  // ── Level 5–6: negatives & fractions  ────────────
+  // ax + b = c  with fractions: x/d + b = c
+  function genLevel3() {
+    if (Math.random() < 0.5) {
+      // same as level 2 but coefficients can be negative and larger
+      const a = rndNZ(10);
+      const b = rnd(-15, 15, true);
+      const x = rnd(-10, 10, true);
+      const c = a * x + b;
+      const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
+      return {
+        display: `${lhs} = ${c}`,
+        answer: x,
+        explanation: `Resta ${b >= 0 ? b : '(' + b + ')'} a ambos lados: ${coef(a)} = ${c - b}. Divide entre ${a}: x = ${x}`
+      };
+    } else {
+      // x/d + b = c  →  x = (c - b) * d
+      const d = rnd(2, 6);
+      const b = rnd(-10, 10, true);
+      const x = rnd(-5, 5, true) * d; // ensure integer answer
+      const c = x / d + b;
+      const lhs = b >= 0 ? `x/${d} + ${b}` : `x/${d} - ${Math.abs(b)}`;
+      return {
+        display: `${lhs} = ${c}`,
+        answer: x,
+        explanation: `Resta ${b} a ambos lados: x/${d} = ${c - b}. Multiplica por ${d}: x = ${x}`
+      };
+    }
+  }
+
+  // ── Level 7–8: parentheses  ──────────────────────
+  // a(x + b) = c  or  a(bx + c) = d
+  function genLevel4() {
+    if (Math.random() < 0.5) {
+      // a(x + b) = c
+      const a = rndNZ(6);
+      const b = rnd(-8, 8, true);
+      const x = rnd(-8, 8, true);
+      const c = a * (x + b);
+      return {
+        display: `${a}(x ${sign(b)}) = ${c}`,
+        answer: x,
+        explanation: `Divide entre ${a}: x ${sign(b)} = ${c/a}. Despeja x: x = ${x}`
+      };
+    } else {
+      // a(bx + c) = d
+      const a = rnd(2, 5);
+      const b = rndNZ(4);
+      const c = rnd(-6, 6, true);
+      const x = rnd(-5, 5, true);
+      const d = a * (b * x + c);
+      return {
+        display: `${a}(${coef(b)} ${sign(c)}) = ${d}`,
+        answer: x,
+        explanation: `Divide entre ${a}: ${coef(b)} ${sign(c)} = ${d/a}. Despeja: x = ${x}`
+      };
+    }
+  }
+
+  // ── Level 9–10: variables on both sides  ─────────
+  // ax + b = cx + d
+  function genLevel5() {
+    const a = rndNZ(8);
+    let c;
+    do { c = rndNZ(8); } while (c === a);
+    const x = rnd(-8, 8, true);
+    const b = rnd(-10, 10, true);
+    const d = (a - c) * x + b;
+    const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
+    const rhs = `${coef(c)} ${sign(d)}`;
+    return {
+      display: `${lhs} = ${rhs}`,
+      answer: x,
+      explanation: `Pasa las x a un lado: ${coef(a - c)} = ${d - b}. x = ${x}`
+    };
+  }
+
+  // ── Level 11+: combined complexity  ─────────────
+  // a(bx + c) + dx = e  or  a(x + b) = c(x + d)
+  function genLevel6() {
+    if (Math.random() < 0.5) {
+      const a = rnd(2, 4);
+      const b = rndNZ(3);
+      const c = rnd(-5, 5, true);
+      const d = rndNZ(4);
+      const x = rnd(-5, 5, true);
+      const e = a * (b * x + c) + d * x;
+      const dStr = d > 0 ? `+ ${d}x` : `- ${Math.abs(d)}x`;
+      return {
+        display: `${a}(${coef(b)} ${sign(c)}) ${dStr} = ${e}`,
+        answer: x,
+        explanation: `Expande: ${a*b}x ${sign(a*c)} ${dStr} = ${e}. Combina: ${a*b+d}x = ${e - a*c}. x = ${x}`
+      };
+    } else {
+      // a(x + b) = c(x + d) — variables both sides with parens
+      const a = rnd(2, 6);
+      let c;
+      do { c = rnd(2, 6); } while (c === a);
+      const b = rnd(-5, 5, true);
+      const x = rnd(-6, 6, true);
+      const numerator = (a - c) * x + a * b;
+      if (numerator % c !== 0) return genLevel6(); // retry for integer d
+      const d = numerator / c;
+      return {
+        display: `${a}(x ${sign(b)}) = ${c}(x ${sign(d)})`,
+        answer: x,
+        explanation: `Expande: ${a}x ${sign(a*b)} = ${c}x ${sign(c*d)}. Despeja: ${a-c}x = ${c*d - a*b}. x = ${x}`
+      };
+    }
+  }
+
+  // ── Dispatcher  ──────────────────────────────────
+  function generateProblem(level) {
+    if (level <= 2)  return genLevel1();
+    if (level <= 4)  return genLevel2();
+    if (level <= 6)  return genLevel3();
+    if (level <= 8)  return genLevel4();
+    if (level <= 10) return genLevel5();
+    return genLevel6();
+  }
+
+  // ════════════════════════════════════════════════
+  // ANSWER CHECKER
+  // ════════════════════════════════════════════════
+
+  // Parse user input: accepts integers, decimals, simple fractions (e.g. "3/2")
+  function parseAnswer(raw) {
+    const s = raw.trim().replace(',', '.'); // allow comma as decimal separator
+    if (/^-?\d+$/.test(s)) return parseInt(s, 10);
+    if (/^-?\d+(\.\d+)?$/.test(s)) return parseFloat(s);
+    const frac = s.match(/^(-?\d+)\s*\/\s*([1-9]\d*)$/);
+    if (frac) return parseInt(frac[1], 10) / parseInt(frac[2], 10);
+    return NaN;
+  }
+
+  function checkAnswer(userRaw, correctAnswer) {
+    const user = parseAnswer(userRaw);
+    if (isNaN(user)) return false;
+    return Math.abs(user - correctAnswer) < 0.001;
+  }
+
+  // ════════════════════════════════════════════════
+  // SCORING
+  // ════════════════════════════════════════════════
+
+  const CORRECT_FOR_LEVELUP = 10;
+
+  function pointsForLevel(level) {
+    return level <= 2 ? 5 : level <= 4 ? 8 : level <= 6 ? 10 : level <= 8 ? 13 : level <= 10 ? 15 : 20;
+  }
+
+  // Returns true if a level-up occurred
+  function registerCorrect() {
+    state.points += pointsForLevel(state.level);
+    state.correctCount += 1;
+    markPlayedToday();
+    saveState();
+    if (state.correctCount % CORRECT_FOR_LEVELUP === 0) {
+      state.level += 1;
+      saveState();
+      return true; // level-up!
+    }
+    return false;
+  }
+
+  function registerWrong() {
+    markPlayedToday();
+    saveState();
+  }
+
+  // ════════════════════════════════════════════════
+  // UI CONTROLLER
+  // ════════════════════════════════════════════════
+
+  let currentProblem = null;
+
+  // DOM refs
+  const elProblem   = document.getElementById('problem');
+  const elAnswer    = document.getElementById('answer');
+  const elSubmit    = document.getElementById('submit');
+  const elFeedback  = document.getElementById('feedback');
+  const elNext      = document.getElementById('next');
+  const elLevelup   = document.getElementById('levelup');
+  const elLuLevel   = document.getElementById('lu-level');
+  const elLuClose   = document.getElementById('lu-close');
+  const elHdrPoints = document.getElementById('hdr-points');
+  const elHdrStreak = document.getElementById('hdr-streak');
+  const elLevelNum  = document.getElementById('level-num');
+
+  function refreshHeader() {
+    elHdrPoints.textContent = state.points;
+    elHdrStreak.textContent = state.streak;
+    elLevelNum.textContent  = state.level;
+  }
+
+  function showProblem() {
+    currentProblem = generateProblem(state.level);
+    elProblem.textContent = currentProblem.display;
+    elAnswer.value = '';
+    elAnswer.disabled = false;
+    elFeedback.className = '';
+    elFeedback.innerHTML = '';
+    elNext.style.display = 'none';
+    elSubmit.style.display = '';
+    refreshHeader();
+    elAnswer.focus();
+  }
+
+  function onSubmit() {
+    const raw = elAnswer.value;
+    if (!raw.trim()) return;
+
+    elAnswer.disabled = true;
+    elSubmit.style.display = 'none';
+
+    const correct = checkAnswer(raw, currentProblem.answer);
+
+    if (correct) {
+      const leveled = registerCorrect();
+      refreshHeader();
+      elFeedback.className = 'correct';
+      elFeedback.innerHTML = `<strong>¡Correcto!</strong>${currentProblem.explanation}`;
+      elNext.style.display = 'block';
+      if (leveled) {
+        setTimeout(() => {
+          elLuLevel.textContent = state.level;
+          elLevelup.classList.add('show');
+        }, 600);
+      }
+    } else {
+      registerWrong();
+      elFeedback.className = 'wrong';
+      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es x = ${currentProblem.answer}.<br>${currentProblem.explanation}`;
+      elNext.style.display = 'block';
+    }
+  }
+
+  // Event listeners
+  elSubmit.addEventListener('click', onSubmit);
+  elAnswer.addEventListener('keydown', e => { if (e.key === 'Enter') onSubmit(); });
+  elNext.addEventListener('click', showProblem);
+  elLuClose.addEventListener('click', () => {
+    elLevelup.classList.remove('show');
+    showProblem();
+  });
+
+  // Boot (showProblem calls refreshHeader internally)
+  showProblem();
+  </script>
+</body>
+</html>

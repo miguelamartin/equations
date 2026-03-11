@@ -251,10 +251,14 @@
     .level-option.active .level-dot { opacity: 0.35; background: white; }
 
     /* ── Next button ──────────────────────────────── */
-    #next {
+    .next-row {
       display: none;
-      width: 100%;
+      gap: 0.6rem;
       margin-top: 1rem;
+    }
+    .next-row.visible { display: flex; }
+    #next {
+      flex: 1;
       background: #10b981;
       color: white;
       border: none;
@@ -266,6 +270,18 @@
       transition: background 0.2s;
     }
     #next:hover { background: #059669; }
+    #share {
+      background: #e0e7ff;
+      color: #3730a3;
+      border: none;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    #share:hover { background: #c7d2fe; }
 
     /* ── Explanation toggle ────────────────────────── */
     .explanation-toggle {
@@ -359,7 +375,10 @@
       <button id="submit">Comprobar</button>
     </div>
     <div id="feedback"></div>
-    <button id="next">Siguiente &rarr;</button>
+    <div class="next-row" id="next-row">
+      <button id="next">Siguiente &rarr;</button>
+      <button id="share">Compartir</button>
+    </div>
   </main>
 
   <script>
@@ -398,19 +417,35 @@
   const state = loadState();
 
   // ════════════════════════════════════════════════
+  // SEEDED RNG (mulberry32)
+  // ════════════════════════════════════════════════
+
+  let _seed = 0;
+  function _rng() {
+    _seed = (_seed + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(_seed ^ (_seed >>> 15), 1 | _seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) >>> 0;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+
+  let _currentSeed = 0;
+  function seedRng(s) { _seed = _currentSeed = s >>> 0; }
+  function newSeed() { return (Math.random() * 0xFFFFFFFF) >>> 0; }
+
+  // ════════════════════════════════════════════════
   // PROBLEM GENERATOR
   // ════════════════════════════════════════════════
 
   // Returns a random integer in [min, max] excluding 0 if excludeZero=true
   function rnd(min, max, excludeZero = false) {
     let n;
-    do { n = Math.floor(Math.random() * (max - min + 1)) + min; }
+    do { n = Math.floor(_rng() * (max - min + 1)) + min; }
     while (excludeZero && n === 0);
     return n;
   }
 
   // Returns a random non-zero integer in [-max, -1] ∪ [1, max]
-  function rndNZ(max) { return rnd(1, max) * (Math.random() < 0.5 ? 1 : -1); }
+  function rndNZ(max) { return rnd(1, max) * (_rng() < 0.5 ? 1 : -1); }
 
   // Format coefficient: 1x -> "x", -1x -> "-x", 2x -> "2x"
   function coef(c) {
@@ -430,7 +465,7 @@
   // Randomly swap LHS and RHS of the display string (50% chance).
   // Explanations always resolve toward x = N so they stay valid either way.
   function maybeFlip(problem) {
-    if (Math.random() < 0.5) return problem;
+    if (_rng() < 0.5) return problem;
     const eq = problem.display.indexOf(' = ');
     if (eq === -1) return problem;
     problem.display = problem.display.slice(eq + 3) + ' = ' + problem.display.slice(0, eq);
@@ -484,9 +519,9 @@
   // 20%: N is NOT divisible by a but gcd(N,a) keeps denominator ≤ 4 (clean fraction).
   // All equation constants remain integers — no decimals anywhere.
   function pickNumerator(a, intMin, intMax) {
-    if (Math.random() < 0.8) {
+    if (_rng() < 0.8) {
       // integer answer: pick x in range, derive N = a*x
-      const x = rnd(intMin, intMax, true);
+      const x = rnd(intMin, intMax);
       return a * x;
     }
     // fractional answer: pick N that is NOT divisible by a but gives clean fraction
@@ -517,9 +552,9 @@
   // ── Level 1: one-step  ───────────────────────────
   // x + b = c  or  ax = c
   function genLevel1() {
-    if (Math.random() < 0.5) {
+    if (_rng() < 0.5) {
       const b = rnd(-9, 9, true);
-      const x = rnd(-9, 9, true);
+      const x = rnd(-9, 9);
       const c = x + b;
       const expr = b >= 0 ? `x + ${b}` : `x - ${Math.abs(b)}`;
       const op = b >= 0 ? `restamos ${b}` : `sumamos ${Math.abs(b)}`;
@@ -527,7 +562,7 @@
       const transpB = `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`;
       const interB = `x = ${c} ${signedVal(-b)}`;
       // flip: show as c = x+b half the time
-      if (Math.random() < 0.5) {
+      if (_rng() < 0.5) {
         return {
           display: `${c} = ${expr}`,
           answer: x,
@@ -543,20 +578,21 @@
       };
     } else {
       const a = rndNZ(6);
-      const x = rnd(-9, 9, true);
-      const c = a * x;
+      const N = pickNumerator(a, -9, 9);
+      const c = N;
+      const ans = rational(N, a);
       // flip: show as c = ax half the time
-      if (Math.random() < 0.5) {
+      if (_rng() < 0.5) {
         return {
           display: `${c} = ${coef(a)}`,
-          answer: x,
+          answer: ans.val,
           explanation: steps(...divSteps(coef(a), a, c)),
           explanationSimple: steps(...divStepsSimple(a, c))
         };
       }
       return {
         display: `${coef(a)} = ${c}`,
-        answer: x,
+        answer: ans.val,
         explanation: steps(...divSteps(coef(a), a, c)),
         explanationSimple: steps(...divStepsSimple(a, c))
       };
@@ -575,7 +611,7 @@
     const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
     const transpB2 = `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`;
     // flip: show as c = ax+b half the time
-    if (Math.random() < 0.5) {
+    if (_rng() < 0.5) {
       return {
         display: `${c} = ${lhs}`,
         answer: rational(N, a).val,
@@ -604,7 +640,7 @@
   // ── Level 2b: negatives & fractions  ─────────────
   // ax + b = c  or  x/d + b = c
   function genLevel3() {
-    if (Math.random() < 0.5) {
+    if (_rng() < 0.5) {
       const a = rndNZ(6);
       const b = rnd(-8, 8, true);
       const N = pickNumerator(a, -6, 6);
@@ -614,7 +650,7 @@
       const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       const transpB3 = `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`;
       // flip: show as c = ax+b half the time
-      if (Math.random() < 0.5) {
+      if (_rng() < 0.5) {
         return {
           display: `${c} = ${lhs}`,
           answer: rational(N, a).val,
@@ -641,7 +677,7 @@
     } else {
       const d = rnd(2, 5);
       const b = rnd(-8, 8, true);
-      const x = rnd(-4, 4, true) * d;
+      const x = rnd(-4, 4) * d;
       const c = x / d + b;
       const lhs = b >= 0 ? `${frac('x', d)} + ${b}` : `${frac('x', d)} - ${Math.abs(b)}`;
       const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
@@ -649,7 +685,7 @@
       const transpB3b = `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`;
       const transpD3b = `el ${d} que está dividiendo pasa al otro lado multiplicando`;
       // flip half the time
-      if (Math.random() < 0.5) {
+      if (_rng() < 0.5) {
         return {
           display: `${c} = ${lhs}`,
           answer: x,
@@ -686,7 +722,7 @@
   // Branch 2: c = a(x+b) or d = a(bx+c)  — parenthesis right
   // Branch 3: a(x+b) = c(x+d)     — parenthesis both sides
   function genLevel4() {
-    const branch = Math.floor(Math.random() * 4);
+    const branch = Math.floor(_rng() * 4);
 
     if (branch === 0) {
       // a(x+b) = c  →  x+b = c/a  →  x = c/a - b
@@ -726,8 +762,10 @@
       const a = rnd(2, 4);
       const b = rndNZ(3);
       const c = rnd(-5, 5, true);
-      const x = rnd(-5, 5, true);
-      const d = a * (b * x + c);
+      const N = pickNumerator(b, -5, 5); // N = b*x (integer), so d/a - c = N, d = a*(N+c)
+      const x = rational(N, b).val;
+      const d = a * (N + c);
+      const da = N + c;  // d/a
       const inner = `${coef(b)} ${sign(c)}`;
       const negC = c >= 0 ? `− ${c}` : `+ ${Math.abs(c)}`;
       const stepC = c >= 0 ? `restamos ${c} a ambos lados` : `sumamos ${Math.abs(c)} a ambos lados`;
@@ -737,20 +775,20 @@
         explanation: steps(
           `dividimos ambos lados entre ${a}`,
           `${frac(`${a}(${inner})`, a)} = ${frac(d, a)}`,
-          `${inner} = ${d / a}`,
+          `${inner} = ${da}`,
           stepC,
-          `${coef(b)} ${sign(c)} ${negC} = ${d / a} ${negC}`,
-          `${coef(b)} = ${d / a - c}`,
-          ...divSteps(coef(b), b, d / a - c)
+          `${coef(b)} ${sign(c)} ${negC} = ${da} ${negC}`,
+          `${coef(b)} = ${N}`,
+          ...divSteps(coef(b), b, N)
         ),
         explanationSimple: steps(
           `el ${a} que está multiplicando pasa al otro lado dividiendo`,
           `${inner} = ${frac(d, a)}`,
-          `${inner} = ${d / a}`,
+          `${inner} = ${da}`,
           `el ${signedVal(c)} pasa al otro lado como ${signedVal(-c)}`,
-          `${inner} = ${d / a} ${signedVal(-c)}`,
-          `${coef(b)} = ${d / a - c}`,
-          ...divStepsSimple(b, d / a - c)
+          `${inner} = ${da} ${signedVal(-c)}`,
+          `${coef(b)} = ${N}`,
+          ...divStepsSimple(b, N)
         )
       };
     }
@@ -760,8 +798,10 @@
       const a = rnd(2, 4);
       const b = rndNZ(3);
       const e = rnd(-5, 5, true);
-      const x = rnd(-5, 5, true);
-      const c = a * (b * x + e);
+      const N = pickNumerator(b, -5, 5); // N = b*x, so c/a - e = N, c = a*(N+e)
+      const x = rational(N, b).val;
+      const c = a * (N + e);
+      const ca = N + e;  // c/a
       const inner = `${coef(b)} ${sign(e)}`;
       const negE = e >= 0 ? `− ${e}` : `+ ${Math.abs(e)}`;
       const stepE = e >= 0 ? `restamos ${e} a ambos lados` : `sumamos ${Math.abs(e)} a ambos lados`;
@@ -771,20 +811,20 @@
         explanation: steps(
           `dividimos ambos lados entre ${a}`,
           `${frac(c, a)} = ${frac(`${a}(${inner})`, a)}`,
-          `${c / a} = ${inner}`,
+          `${ca} = ${inner}`,
           stepE,
-          `${c / a} ${negE} = ${coef(b)} ${sign(e)} ${negE}`,
-          `${c / a - e} = ${coef(b)}`,
-          ...divSteps(coef(b), b, c / a - e)
+          `${ca} ${negE} = ${coef(b)} ${sign(e)} ${negE}`,
+          `${N} = ${coef(b)}`,
+          ...divSteps(coef(b), b, N)
         ),
         explanationSimple: steps(
           `el ${a} que está multiplicando pasa al otro lado dividiendo`,
           `${frac(c, a)} = ${inner}`,
-          `${c / a} = ${inner}`,
+          `${ca} = ${inner}`,
           `el ${signedVal(e)} pasa al otro lado como ${signedVal(-e)}`,
-          `${c / a} ${signedVal(-e)} = ${inner}`,
-          `${c / a - e} = ${coef(b)}`,
-          ...divStepsSimple(b, c / a - e)
+          `${ca} ${signedVal(-e)} = ${inner}`,
+          `${N} = ${coef(b)}`,
+          ...divStepsSimple(b, N)
         )
       };
     }
@@ -794,7 +834,7 @@
     let c;
     do { c = rnd(2, 5); } while (c === a);
     const b = rnd(-5, 5, true);
-    const x = rnd(-5, 5, true);
+    const x = rnd(-5, 5);
     // derive d: a*(x+b) = c*(x+d)  →  d = (a*(x+b) - c*x) / c
     const lhs = a * (x + b);
     if (lhs % c !== 0) return genLevel4();
@@ -886,7 +926,7 @@
   // ── Level 4: combined complexity  ────────────────
   // a(bx + c) + dx = e  or  a(x + b) = c(x + d)
   function genLevel6() {
-    if (Math.random() < 0.5) {
+    if (_rng() < 0.5) {
       const a = rnd(2, 4);
       const b = rndNZ(3);
       const c = rnd(-5, 5, true);
@@ -929,7 +969,7 @@
       let c;
       do { c = rnd(2, 5); } while (c === a);
       const b = rnd(-5, 5, true);
-      const x = rnd(-5, 5, true);
+      const x = rnd(-5, 5);
       const numerator = (a - c) * x + a * b;
       if (numerator % c !== 0) return genLevel6();
       const d = numerator / c;
@@ -976,24 +1016,24 @@
   // Type B: ax/d + b = c              — just the x-term is a fraction
   // Type C: (ax + b) / d = cx + e     — fraction on left, x on both sides
   function genLevel7() {
-    const type = Math.floor(Math.random() * 3);
+    const type = Math.floor(_rng() * 3);
 
     if (type === 0) {
       // (ax + b) / d = c  →  ax + b = c*d  →  ax = c*d - b  →  x = (c*d - b)/a
       const d = rnd(2, 5);
       const a = rndNZ(4);
-      const x = rnd(-6, 6, true);
       const b = rnd(-7, 7, true);
-      const cd = a * x + b;          // c*d
+      const rhs = pickNumerator(a, -6, 6); // rhs = a*x (possibly non-integer answer)
+      const x = rational(rhs, a).val;
+      const cd = rhs + b;            // c*d
       if (cd % d !== 0) return genLevel7();
       const c = cd / d;
-      const rhs = cd - b;            // a*x
       const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       const transpD7a = `el ${d} que está dividiendo pasa al otro lado multiplicando`;
       const transpB7a = `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`;
       // flip: show as c = (ax+b)/d half the time
-      if (Math.random() < 0.5) {
+      if (_rng() < 0.5) {
         return {
           display: `${c} = ${frac(`${coef(a)} ${sign(b)}`, d)}`,
           answer: x,
@@ -1042,19 +1082,19 @@
       // ax/d + b = c  →  ax/d = c - b  →  ax = (c-b)*d  →  x = (c-b)*d / a
       const d = rnd(2, 5);
       const a = rndNZ(4);
-      const x = rnd(-6, 6, true);
-      if ((a * x) % d !== 0) return genLevel7(); // ensure ax/d is integer for display clarity
       const b = rnd(-7, 7, true);
-      const c = (a * x) / d + b;
-      const cb = c - b;             // ax/d value
-      const rhs = cb * d;           // ax
+      const rhs = pickNumerator(a, -6, 6); // rhs = a*x
+      if (rhs % d !== 0) return genLevel7(); // ensure ax/d is integer for display clarity
+      const x = rational(rhs, a).val;
+      const cb = rhs / d;           // ax/d value
+      const c = cb + b;
       const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       const axFrac = a === 1 ? frac('x', d) : a === -1 ? frac('-x', d) : frac(`${a}x`, d);
       const transpB7b = `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`;
       const transpD7b = `el ${d} que está dividiendo pasa al otro lado multiplicando`;
       // flip: show as c = ax/d + b half the time
-      if (Math.random() < 0.5) {
+      if (_rng() < 0.5) {
         return {
           display: `${c} = ${axFrac} ${sign(b)}`,
           answer: x,
@@ -1106,7 +1146,7 @@
     const a = rndNZ(4);
     let cCoef;
     do { cCoef = rndNZ(3); } while (cCoef === a);
-    const x = rnd(-5, 5, true);
+    const x = rnd(-5, 5);
     const b = rnd(-6, 6, true);
     const e = rnd(-6, 6, true);
     const lhsNum = a * x + b;        // numerator of left fraction
@@ -1160,7 +1200,7 @@
   // Type C: (ax+b)/d = e(cx+f)         — fraction vs parenthesis
   // Type D: (ax+b)/d + cx = ex + f     — fraction + x-term vs plain
   function genLevel8() {
-    const type = Math.floor(Math.random() * 4);
+    const type = Math.floor(_rng() * 4);
 
     if (type === 0) {
       // (ax+b)/d = (cx+e)/f
@@ -1172,7 +1212,7 @@
       const a = rndNZ(4);
       let c;
       do { c = rndNZ(4); } while (c === a);
-      const x = rnd(-5, 5, true);
+      const x = rnd(-5, 5);
       const b = rnd(-6, 6, true);
       // derive e so that (ax+b)/d = (cx+e)/f holds exactly
       // e = f*(ax+b)/d - cx; need (ax+b) divisible by d
@@ -1241,7 +1281,7 @@
       const c = rnd(-5, 5, true);
       let e;
       do { e = rndNZ(4); } while (e * d === a * b); // avoid coefX === 0
-      const x = rnd(-5, 5, true);
+      const x = rnd(-5, 5);
       // derive f: a*(bx+c)/d = ex+f  →  f = a*(bx+c)/d - ex
       const inner = a * (b * x + c);
       if (inner % d !== 0) return genLevel8();
@@ -1301,7 +1341,7 @@
       const a = rndNZ(4);
       let c;
       do { c = rndNZ(3); } while (a === de * c); // avoid coefX === 0
-      const x = rnd(-5, 5, true);
+      const x = rnd(-5, 5);
       const b = rnd(-6, 6, true);
       // derive f: (ax+b)/d = e*(cx+f)  →  f = (ax+b)/(d*e) - cx
       const lhsNum = a * x + b;
@@ -1362,7 +1402,7 @@
     const c = rndNZ(3);
     let e;
     do { e = rndNZ(4); } while (a + c * d === e * d); // avoid coefX === 0
-    const x = rnd(-5, 5, true);
+    const x = rnd(-5, 5);
     const b = rnd(-6, 6, true);
     // derive f: (ax+b)/d + cx = ex + f  →  f = (ax+b)/d + cx - ex
     const lhsNum = a * x + b;
@@ -1422,10 +1462,11 @@
   // Level 3: parentheses + variables on both sides
   // Level 4: combined complexity
   // Level 5: fracciones — fractions in the equation from the start
-  function generateProblem(level) {
+  function generateProblem(level, seed) {
+    seedRng(seed !== undefined ? seed : newSeed());
     if (level <= 1) return genLevel1();
-    if (level <= 2) return Math.random() < 0.5 ? genLevel2() : genLevel3();
-    if (level <= 3) return Math.random() < 0.5 ? genLevel4() : genLevel5();
+    if (level <= 2) return _rng() < 0.5 ? genLevel2() : genLevel3();
+    if (level <= 3) return _rng() < 0.5 ? genLevel4() : genLevel5();
     if (level <= 4) return genLevel6();
     if (level <= 5) return genLevel7();
     return genLevel8();
@@ -1495,6 +1536,8 @@
   const elSubmit    = document.getElementById('submit');
   const elFeedback  = document.getElementById('feedback');
   const elNext      = document.getElementById('next');
+  const elShare     = document.getElementById('share');
+  const elNextRow   = document.getElementById('next-row');
   const elHdrPoints = document.getElementById('hdr-points');
   const elLevelNum    = document.getElementById('level-num');
   const elLevelBadge  = document.getElementById('level-badge');
@@ -1606,7 +1649,7 @@
     setKeypadDisabled(false);
     elFeedback.className = '';
     elFeedback.innerHTML = '';
-    elNext.style.display = 'none';
+    elNextRow.classList.remove('visible');
     elSubmit.style.display = '';
     refreshHeader();
   }
@@ -1626,12 +1669,12 @@
       refreshHeader();
       elFeedback.className = 'correct';
       elFeedback.innerHTML = `<strong>¡Correcto!</strong>${currentExpl() || ''}`;
-      elNext.style.display = 'block';
+      elNextRow.classList.add('visible');
     } else {
       registerWrong();
       elFeedback.className = 'wrong';
       elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${displayAnswer(currentProblem.answer)}</strong>${currentExpl() || ''}`;
-      elNext.style.display = 'block';
+      elNextRow.classList.add('visible');
     }
   }
 
@@ -1656,6 +1699,15 @@
   elSubmit.addEventListener('click', onSubmit);
   elNext.addEventListener('click', showProblem);
 
+  elShare.addEventListener('click', () => {
+    const url = `${location.origin}${location.pathname}?s=${_currentSeed}&l=${state.level}`;
+    navigator.clipboard.writeText(url).then(() => {
+      const prev = elShare.textContent;
+      elShare.textContent = '¡Copiado!';
+      setTimeout(() => { elShare.textContent = prev; }, 1500);
+    });
+  });
+
   elLevelBadge.addEventListener('click', () => {
     elLevelMenu.classList.contains('open') ? closeLevelMenu() : openLevelMenu();
   });
@@ -1675,8 +1727,27 @@
     if (!elLevelBadge.contains(e.target) && !elLevelMenu.contains(e.target)) closeLevelMenu();
   });
 
-  // Boot (showProblem calls refreshHeader internally)
-  showProblem();
+  // Boot — if ?s= param present, replay that exact problem; otherwise generate fresh
+  const _urlParams = new URLSearchParams(location.search);
+  const _urlSeed = _urlParams.get('s');
+  const _urlLevel = _urlParams.get('l');
+  if (_urlSeed !== null) {
+    if (_urlLevel !== null) state.level = parseInt(_urlLevel, 10);
+    currentProblem = generateProblem(state.level, parseInt(_urlSeed, 10));
+    elProblem.innerHTML = currentProblem.display;
+    elAnswer.value = '';
+    elAnswer.disabled = false;
+    elSubmit.disabled = true;
+    updateDisplay();
+    setKeypadDisabled(false);
+    elFeedback.className = '';
+    elFeedback.innerHTML = '';
+    elNextRow.classList.remove('visible');
+    elSubmit.style.display = '';
+    refreshHeader();
+  } else {
+    showProblem();
+  }
   </script>
 </body>
 </html>

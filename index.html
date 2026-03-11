@@ -532,7 +532,7 @@
         display: `${a}(${coef(b)} ${sign(c)}) ${dStr} = ${e}`,
         answer: x,
         explanation: steps(
-          `expandimos: ${a}(${coef(b)} ${sign(c)}) ${dStr}`,
+          `expandimos: ${a}(${coef(b)} ${sign(c)})`,
           `${coef(ab)} ${sign(ac)} ${dStr} = ${e}`,
           `combinamos términos con x: ${coef(ab)} ${dStr} = ${coef(total)}`,
           `${coef(total)} ${sign(ac)} = ${e}`,
@@ -560,8 +560,10 @@
         display: `${a}(x ${sign(b)}) = ${c}(x ${sign(d)})`,
         answer: x,
         explanation: steps(
-          `expandimos: ${a}(x ${sign(b)}) = ${c}(x ${sign(d)})`,
-          `${a}x ${sign(ab)} = ${c}x ${sign(cd)}`,
+          `expandimos: ${a}(x ${sign(b)})`,
+          `${a}x ${sign(ab)}`,
+          `expandimos: ${c}(x ${sign(d)})`,
+          `${c}x ${sign(cd)}`,
           moveX,
           `${a}x ${cNeg} ${sign(ab)} = ${c}x ${cNeg} ${sign(cd)}`,
           `${coef(ac)} ${sign(ab)} = ${cd}`,

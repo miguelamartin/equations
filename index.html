@@ -369,6 +369,16 @@
     return `<span class="frac"><span class="num">${num}</span><span class="den">${den}</span></span>`;
   }
 
+  // Randomly swap LHS and RHS of the display string (50% chance).
+  // Explanations always resolve toward x = N so they stay valid either way.
+  function maybeFlip(problem) {
+    if (Math.random() < 0.5) return problem;
+    const eq = problem.display.indexOf(' = ');
+    if (eq === -1) return problem;
+    problem.display = problem.display.slice(eq + 3) + ' = ' + problem.display.slice(0, eq);
+    return problem;
+  }
+
   // Wrap explanation steps in a styled list
   function steps(...lines) {
     return `<div class="steps">${lines.map(l => {
@@ -404,7 +414,7 @@
       const expr = b >= 0 ? `x + ${b}` : `x - ${Math.abs(b)}`;
       const op = b >= 0 ? `restamos ${b}` : `sumamos ${Math.abs(b)}`;
       const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
-      return {
+      return maybeFlip({
         display: `${expr} = ${c}`,
         answer: x,
         explanation: steps(
@@ -412,7 +422,7 @@
           `x + ${b} ${neg} = ${c} ${neg}`,
           `x = ${x}`
         )
-      };
+      });
     } else {
       const a = rndNZ(10);
       const x = rnd(-10, 10, true);
@@ -435,7 +445,7 @@
     const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
     const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
     const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
-    return {
+    return maybeFlip({
       display: `${lhs} = ${c}`,
       answer: x,
       explanation: steps(
@@ -444,7 +454,7 @@
         `${coef(a)} = ${c - b}`,
         ...divSteps(coef(a), a, c - b)
       )
-    };
+    });
   }
 
   // ── Level 2b: negatives & fractions  ─────────────
@@ -458,7 +468,7 @@
       const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
       const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
-      return {
+      return maybeFlip({
         display: `${lhs} = ${c}`,
         answer: x,
         explanation: steps(
@@ -467,7 +477,7 @@
           `${coef(a)} = ${c - b}`,
           ...divSteps(coef(a), a, c - b)
         )
-      };
+      });
     } else {
       const d = rnd(2, 6);
       const b = rnd(-10, 10, true);
@@ -476,7 +486,7 @@
       const lhs = b >= 0 ? `${frac('x', d)} + ${b}` : `${frac('x', d)} - ${Math.abs(b)}`;
       const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
-      return {
+      return maybeFlip({
         display: `${lhs} = ${c}`,
         answer: x,
         explanation: steps(
@@ -487,7 +497,7 @@
           `${frac('x', d)} × ${d} = ${c - b} × ${d}`,
           `x = ${x}`
         )
-      };
+      });
     }
   }
 
@@ -659,7 +669,7 @@
       const ab = a * b, ac = a * c, total = ab + d, rhs = e - ac;
       const negAc = ac >= 0 ? `− ${ac}` : `+ ${Math.abs(ac)}`;
       const moveConst = ac >= 0 ? `restamos ${ac} a ambos lados` : `sumamos ${Math.abs(ac)} a ambos lados`;
-      return {
+      return maybeFlip({
         display: `${a}(${coef(b)} ${sign(c)}) ${dStr} = ${e}`,
         answer: x,
         explanation: steps(
@@ -672,7 +682,7 @@
           `${coef(total)} = ${rhs}`,
           ...divSteps(coef(total), total, rhs)
         )
-      };
+      });
     } else {
       const a = rnd(2, 6);
       let c;
@@ -726,7 +736,7 @@
       const rhs = cd - b;            // a*x
       const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
-      return {
+      return maybeFlip({
         display: `${frac(`${coef(a)} ${sign(b)}`, d)} = ${c}`,
         answer: x,
         explanation: steps(
@@ -738,7 +748,7 @@
           `${coef(a)} = ${rhs}`,
           ...divSteps(coef(a), a, rhs)
         )
-      };
+      });
     }
 
     if (type === 1) {
@@ -754,7 +764,7 @@
       const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       const axFrac = a === 1 ? frac('x', d) : a === -1 ? frac('-x', d) : frac(`${a}x`, d);
-      return {
+      return maybeFlip({
         display: `${axFrac} ${sign(b)} = ${c}`,
         answer: x,
         explanation: steps(
@@ -766,7 +776,7 @@
           `${coef(a)} = ${rhs}`,
           ...divSteps(coef(a), a, rhs)
         )
-      };
+      });
     }
 
     // type === 2

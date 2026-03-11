@@ -305,7 +305,6 @@
     <h1>Álgebra</h1>
     <div class="stats">
       <div class="stat">Puntos<span id="hdr-points">0</span></div>
-      <div class="stat">Racha<span id="hdr-streak">0</span></div>
     </div>
   </header>
 
@@ -361,7 +360,7 @@
   const STORAGE_KEY = 'math_app_v1';
 
   function defaultState() {
-    return { points: 0, level: 1, correctCount: 0, streak: 0, lastDate: null };
+    return { points: 0, level: 1, correctCount: 0, lastDate: null };
   }
 
   function loadState() {
@@ -379,31 +378,15 @@
     return new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
   }
 
-  // Called once at load: reconciles streak based on last played date, then saves.
-  function updateStreak() {
-    if (!state.lastDate) return; // first time ever — streak stays 0
-    const today = todayStr();
-    if (state.lastDate === today) return; // already played today, nothing to do
-    const diffDays = Math.round((new Date(today) - new Date(state.lastDate)) / 86400000);
-    if (diffDays === 1) state.streak += 1;
-    else if (diffDays > 1) state.streak = 0;
-    state.lastDate = today;
-    saveState();
-  }
-
-  // Called on each interaction: records that the player played today.
-  // Streak logic is handled entirely by updateStreak() at load time.
   function markPlayedToday() {
     const today = todayStr();
     if (state.lastDate !== today) {
-      if (!state.lastDate) state.streak = 1; // first time ever playing
       state.lastDate = today;
       saveState();
     }
   }
 
   const state = loadState();
-  updateStreak();
 
   // ════════════════════════════════════════════════
   // PROBLEM GENERATOR
@@ -1309,7 +1292,6 @@
   const elLuLevel   = document.getElementById('lu-level');
   const elLuClose   = document.getElementById('lu-close');
   const elHdrPoints = document.getElementById('hdr-points');
-  const elHdrStreak = document.getElementById('hdr-streak');
   const elLevelNum    = document.getElementById('level-num');
   const elLevelBadge  = document.getElementById('level-badge');
   const elLevelMenu   = document.getElementById('level-menu');
@@ -1385,7 +1367,6 @@
 
   function refreshHeader() {
     elHdrPoints.textContent = state.points;
-    elHdrStreak.textContent = state.streak;
     elLevelNum.textContent  = state.level;
   }
 

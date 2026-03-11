@@ -74,11 +74,11 @@
     /* ── Input row ────────────────────────────────── */
     .input-row {
       display: flex;
+      flex-direction: column;
       gap: 0.5rem;
       margin-bottom: 1rem;
     }
     #answer {
-      flex: 1;
       font-size: 1.2rem;
       padding: 0.65rem 1rem;
       border: 2px solid #d1d5db;
@@ -97,6 +97,7 @@
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s;
+      width: 100%;
     }
     #submit:hover { background: #3451d1; }
     #submit:focus-visible,
@@ -531,7 +532,7 @@
         display: `${a}(${coef(b)} ${sign(c)}) ${dStr} = ${e}`,
         answer: x,
         explanation: steps(
-          `expandimos: ${a}·${coef(b)} = ${coef(ab)},  ${a}·(${c}) = ${ac}`,
+          `expandimos: ${a}(${coef(b)} ${sign(c)}) ${dStr}`,
           `${coef(ab)} ${sign(ac)} ${dStr} = ${e}`,
           `combinamos términos con x: ${coef(ab)} ${dStr} = ${coef(total)}`,
           `${coef(total)} ${sign(ac)} = ${e}`,
@@ -559,7 +560,8 @@
         display: `${a}(x ${sign(b)}) = ${c}(x ${sign(d)})`,
         answer: x,
         explanation: steps(
-          `expandimos: ${a}x ${sign(ab)} = ${c}x ${sign(cd)}`,
+          `expandimos: ${a}(x ${sign(b)}) = ${c}(x ${sign(d)})`,
+          `${a}x ${sign(ab)} = ${c}x ${sign(cd)}`,
           moveX,
           `${a}x ${cNeg} ${sign(ab)} = ${c}x ${cNeg} ${sign(cd)}`,
           `${coef(ac)} ${sign(ab)} = ${cd}`,

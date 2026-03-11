@@ -1135,6 +1135,7 @@
     const constR = df - b;
     if (constR % coefX !== 0) return genLevel8();
     const cxStr = c > 0 ? `+ ${coef(c)}` : `- ${coef(Math.abs(c))}`;
+    const cxTimesD = c > 0 ? `+ ${coef(c)} · ${d}` : `- ${coef(Math.abs(c))} · ${d}`;
     const axFrac = frac(`${coef(a)} ${sign(b)}`, d);
     const bNeg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
     const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
@@ -1147,7 +1148,7 @@
       explanation: steps(
         `multiplicamos ambos lados por ${d}`,
         `(${axFrac} ${cxStr}) · ${d} = (${coef(e)} ${sign(f)}) · ${d}`,
-        `(${frac(`(${coef(a)} ${sign(b)}) · ${d}`, d)} ${cxStr}) = (${coef(e)} ${sign(f)}) · ${d}`,
+        `(${frac(`(${coef(a)} ${sign(b)}) · ${d}`, d)} ${cxTimesD}) = (${coef(e)} ${sign(f)}) · ${d}`,
         `${coef(a)} ${sign(b)} ${sign(cd)}x = ${coef(de)} ${sign(df)}`,
         `combinamos términos con x: ${coef(a)} ${sign(cd)}x = ${coef(acd)}`,
         `${coef(acd)} ${sign(b)} = ${coef(de)} ${sign(df)}`,

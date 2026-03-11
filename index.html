@@ -143,19 +143,62 @@
       align-items: center;
       gap: 0.5rem;
       margin-bottom: 1rem;
+      position: relative;
     }
-    .level-badge { margin-bottom: 0; }
-    #level-picker {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #4361ee;
-      background: #e0e7ff;
-      border: none;
-      border-radius: 999px;
-      padding: 0.25rem 0.6rem;
+    .level-badge {
+      margin-bottom: 0;
       cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
     }
-    #level-picker:hover { background: #c7d2fe; }
+    .level-badge:hover { background: #c7d2fe; }
+    .level-badge::after {
+      content: ' ▾';
+      font-size: 0.7em;
+      opacity: 0.7;
+    }
+    #level-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      background: white;
+      border: 1.5px solid #c7d2fe;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(67,97,238,0.15);
+      padding: 0.5rem;
+      gap: 0.4rem;
+      z-index: 50;
+      flex-direction: column;
+      min-width: 160px;
+    }
+    #level-menu.open { display: flex; }
+    .level-option {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: 10px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #374151;
+      text-align: left;
+      transition: background 0.15s;
+      width: 100%;
+    }
+    .level-option:hover { background: #e0e7ff; color: #4361ee; }
+    .level-option.active { background: #4361ee; color: white; }
+    .level-option .level-dot {
+      width: 1.5rem; height: 1.5rem;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.2;
+      flex-shrink: 0;
+    }
+    .level-option.active .level-dot { opacity: 0.35; background: white; }
 
     /* ── Next button ──────────────────────────────── */
     #next {
@@ -217,8 +260,13 @@
 
   <main>
     <div class="level-row">
-      <div class="level-badge">Nivel <span id="level-num">1</span></div>
-      <button id="level-picker">Cambiar nivel</button>
+      <div class="level-badge" id="level-badge" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">Nivel <span id="level-num">1</span></div>
+      <div id="level-menu" role="menu">
+        <button class="level-option" data-level="1" role="menuitem"><span class="level-dot"></span>Nivel 1 — ecuaciones simples</button>
+        <button class="level-option" data-level="2" role="menuitem"><span class="level-dot"></span>Nivel 2 — dos pasos y fracciones</button>
+        <button class="level-option" data-level="3" role="menuitem"><span class="level-dot"></span>Nivel 3 — paréntesis y dos lados</button>
+        <button class="level-option" data-level="4" role="menuitem"><span class="level-dot"></span>Nivel 4 — complejidad combinada</button>
+      </div>
     </div>
     <div id="problem"></div>
     <div class="input-row">
@@ -655,7 +703,9 @@
   const elHdrPoints = document.getElementById('hdr-points');
   const elHdrStreak = document.getElementById('hdr-streak');
   const elLevelNum    = document.getElementById('level-num');
-  const elLevelPicker = document.getElementById('level-picker');
+  const elLevelBadge  = document.getElementById('level-badge');
+  const elLevelMenu   = document.getElementById('level-menu');
+  const elLevelOptions = elLevelMenu.querySelectorAll('.level-option');
 
   function refreshHeader() {
     elHdrPoints.textContent = state.points;
@@ -705,22 +755,47 @@
     }
   }
 
-  function pickLevel() {
-    const input = prompt(`Elige un nivel del 1 al 4 (nivel actual: ${state.level}):`, state.level);
-    if (input === null) return; // cancelled
-    const n = parseInt(input, 10);
-    if (!isNaN(n) && n >= 1 && n <= 4) {
-      state.level = n;
-      saveState();
-      showProblem();
-    }
+  function updateLevelMenu() {
+    elLevelOptions.forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.level, 10) === state.level);
+    });
+  }
+
+  function openLevelMenu() {
+    updateLevelMenu();
+    elLevelMenu.classList.add('open');
+    elLevelBadge.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeLevelMenu() {
+    elLevelMenu.classList.remove('open');
+    elLevelBadge.setAttribute('aria-expanded', 'false');
   }
 
   // Event listeners
   elSubmit.addEventListener('click', onSubmit);
   elAnswer.addEventListener('keydown', e => { if (e.key === 'Enter') onSubmit(); });
   elNext.addEventListener('click', showProblem);
-  elLevelPicker.addEventListener('click', pickLevel);
+
+  elLevelBadge.addEventListener('click', () => {
+    elLevelMenu.classList.contains('open') ? closeLevelMenu() : openLevelMenu();
+  });
+  elLevelBadge.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLevelMenu(); }
+    if (e.key === 'Escape') closeLevelMenu();
+  });
+  elLevelOptions.forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.level = parseInt(btn.dataset.level, 10);
+      saveState();
+      closeLevelMenu();
+      showProblem();
+    });
+  });
+  document.addEventListener('click', e => {
+    if (!elLevelBadge.contains(e.target) && !elLevelMenu.contains(e.target)) closeLevelMenu();
+  });
+
   elLuClose.addEventListener('click', () => {
     elLevelup.classList.remove('show');
     showProblem();

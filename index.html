@@ -1087,14 +1087,27 @@
   // ANSWER CHECKER
   // ════════════════════════════════════════════════
 
-  // Parse user input: accepts integers, decimals, simple fractions (e.g. "3/2")
+  // Parse user input: accepts integers, decimals, simple fractions.
+  // Tolerant of spaces anywhere (e.g. "5 / 4", " -3 ", "5/ 4").
   function parseAnswer(raw) {
-    const s = raw.trim().replace(',', '.'); // allow comma as decimal separator
+    const s = raw.replace(/\s+/g, '').replace(',', '.'); // strip all spaces, normalise comma
     if (/^-?\d+$/.test(s)) return parseInt(s, 10);
-    if (/^-?\d+(\.\d+)?$/.test(s)) return parseFloat(s);
-    const frac = s.match(/^(-?\d+)\s*\/\s*([1-9]\d*)$/);
-    if (frac) return parseInt(frac[1], 10) / parseInt(frac[2], 10);
+    if (/^-?\d+\.\d+$/.test(s)) return parseFloat(s);
+    const m = s.match(/^(-?\d+)\/([1-9]\d*)$/);
+    if (m) return parseInt(m[1], 10) / parseInt(m[2], 10);
     return NaN;
+  }
+
+  // Render the correct answer as a fraction string for display (never decimals).
+  function displayAnswer(val) {
+    // Reconstruct p/q from float by checking small denominators
+    for (const den of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      const num = Math.round(val * den);
+      if (Math.abs(num / den - val) < 0.0001 && gcd(Math.abs(num), den) === den / den) {
+        return rational(num, den).display;
+      }
+    }
+    return rational(Math.round(val * 100), 100).display; // fallback
   }
 
   function checkAnswer(userRaw, correctAnswer) {
@@ -1197,7 +1210,7 @@
     } else {
       registerWrong();
       elFeedback.className = 'wrong';
-      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${currentProblem.answer}</strong>${currentProblem.explanation || ''}`;
+      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${displayAnswer(currentProblem.answer)}</strong>${currentProblem.explanation || ''}`;
       elNext.style.display = 'block';
     }
   }

@@ -75,22 +75,67 @@
       #problem { font-size: 2rem; }
     }
 
-    /* ── Input row ────────────────────────────────── */
+    /* ── Custom keypad ─────────────────────────────── */
+    #answer { display: none; } /* hidden — keypad writes into it */
+
     .input-row {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.75rem;
       margin-bottom: 1rem;
     }
-    #answer {
-      font-size: 1.2rem;
-      padding: 0.65rem 1rem;
+
+    /* Live answer display */
+    #answer-display {
+      min-height: 3rem;
+      background: #f8faff;
       border: 2px solid #d1d5db;
       border-radius: 10px;
-      outline: none;
+      padding: 0.5rem 1rem;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       transition: border-color 0.2s;
+      cursor: default;
     }
-    #answer:focus { border-color: #4361ee; }
+    #answer-display.has-value { border-color: #4361ee; }
+    #answer-display .placeholder { color: #9ca3af; font-weight: 400; font-size: 1rem; }
+    #answer-display .frac { font-size: 1em; }
+
+    /* Keypad grid */
+    #keypad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.4rem;
+    }
+    .key {
+      background: #f0f4ff;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 10px;
+      padding: 0.75rem 0;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.12s, transform 0.08s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .key:active { background: #c7d2fe; transform: scale(0.94); }
+    .key.key-fraction {
+      background: #4361ee;
+      color: white;
+      font-size: 1.4rem;
+    }
+    .key.key-fraction:active { background: #3451d1; }
+    .key.key-minus { font-size: 1.5rem; }
+    .key.key-back { background: #fee2e2; color: #991b1b; font-size: 1.1rem; }
+    .key.key-back:active { background: #fca5a5; }
+    .key.key-zero { grid-column: span 2; }
+
     #submit {
       background: #4361ee;
       color: white;
@@ -277,7 +322,24 @@
     </div>
     <div id="problem"></div>
     <div class="input-row">
-      <input id="answer" type="text" inputmode="decimal" placeholder="x = ?" autocomplete="off" aria-label="Tu respuesta" />
+      <input id="answer" type="text" autocomplete="off" aria-label="Tu respuesta" />
+      <div id="answer-display" aria-live="polite"><span class="placeholder">x = ?</span></div>
+      <div id="keypad" role="group" aria-label="Teclado numérico">
+        <button class="key" data-val="7">7</button>
+        <button class="key" data-val="8">8</button>
+        <button class="key" data-val="9">9</button>
+        <button class="key key-back" data-action="back">⌫</button>
+        <button class="key" data-val="4">4</button>
+        <button class="key" data-val="5">5</button>
+        <button class="key" data-val="6">6</button>
+        <button class="key key-minus" data-val="-">−</button>
+        <button class="key" data-val="1">1</button>
+        <button class="key" data-val="2">2</button>
+        <button class="key" data-val="3">3</button>
+        <button class="key key-fraction" data-val="/">⁄</button>
+        <button class="key key-zero" data-val="0">0</button>
+        <button class="key" data-action="clear">C</button>
+      </div>
       <button id="submit">Comprobar</button>
     </div>
     <div id="feedback"></div>
@@ -1166,6 +1228,72 @@
   const elLevelBadge  = document.getElementById('level-badge');
   const elLevelMenu   = document.getElementById('level-menu');
   const elLevelOptions = elLevelMenu.querySelectorAll('.level-option');
+  const elDisplay   = document.getElementById('answer-display');
+  const elKeypad    = document.getElementById('keypad');
+
+  // ── Keypad logic ────────────────────────────────────────────────
+  function updateDisplay() {
+    const val = elAnswer.value;
+    if (!val) {
+      elDisplay.innerHTML = '<span class="placeholder">x = ?</span>';
+      elDisplay.classList.remove('has-value');
+      return;
+    }
+    elDisplay.classList.add('has-value');
+    const slash = val.indexOf('/');
+    if (slash !== -1) {
+      const num = val.slice(0, slash) || '0';
+      const den = val.slice(slash + 1);
+      elDisplay.innerHTML = den
+        ? `<span class="frac"><span class="num">${num}</span><span class="den">${den}</span></span>`
+        : `<span class="frac"><span class="num">${num}</span><span class="den" style="min-width:1.5ch">&nbsp;</span></span>`;
+    } else {
+      elDisplay.textContent = val;
+    }
+  }
+
+  function keypadAppend(ch) {
+    const cur = elAnswer.value;
+    // Only one slash allowed
+    if (ch === '/' && cur.includes('/')) return;
+    // Minus only at start
+    if (ch === '-' && cur.length > 0) return;
+    elAnswer.value = cur + ch;
+    updateDisplay();
+  }
+
+  function keypadBack() {
+    elAnswer.value = elAnswer.value.slice(0, -1);
+    updateDisplay();
+  }
+
+  function keypadClear() {
+    elAnswer.value = '';
+    updateDisplay();
+  }
+
+  function setKeypadDisabled(disabled) {
+    elKeypad.querySelectorAll('.key').forEach(btn => { btn.disabled = disabled; });
+  }
+
+  elKeypad.addEventListener('click', e => {
+    const btn = e.target.closest('.key');
+    if (!btn || btn.disabled) return;
+    if (btn.dataset.action === 'back')  { keypadBack();  return; }
+    if (btn.dataset.action === 'clear') { keypadClear(); return; }
+    if (btn.dataset.val !== undefined)  { keypadAppend(btn.dataset.val); }
+  });
+
+  // Physical keyboard passthrough (desktop)
+  document.addEventListener('keydown', e => {
+    if (elAnswer.disabled) return;
+    if (e.key >= '0' && e.key <= '9')    { keypadAppend(e.key); return; }
+    if (e.key === '-')                    { keypadAppend('-');   return; }
+    if (e.key === '/')                    { e.preventDefault(); keypadAppend('/'); return; }
+    if (e.key === 'Backspace')            { keypadBack();        return; }
+    if (e.key === 'Delete')               { keypadClear();       return; }
+    if (e.key === 'Enter')                { onSubmit();          return; }
+  });
 
   function refreshHeader() {
     elHdrPoints.textContent = state.points;
@@ -1178,12 +1306,13 @@
     elProblem.innerHTML = currentProblem.display;
     elAnswer.value = '';
     elAnswer.disabled = false;
+    updateDisplay();
+    setKeypadDisabled(false);
     elFeedback.className = '';
     elFeedback.innerHTML = '';
     elNext.style.display = 'none';
     elSubmit.style.display = '';
     refreshHeader();
-    elAnswer.focus();
   }
 
   function onSubmit() {
@@ -1191,6 +1320,7 @@
     if (!raw.trim()) return;
 
     elAnswer.disabled = true;
+    setKeypadDisabled(true);
     elSubmit.style.display = 'none';
 
     const correct = checkAnswer(raw, currentProblem.answer);
@@ -1234,7 +1364,6 @@
 
   // Event listeners
   elSubmit.addEventListener('click', onSubmit);
-  elAnswer.addEventListener('keydown', e => { if (e.key === 'Enter') onSubmit(); });
   elNext.addEventListener('click', showProblem);
 
   elLevelBadge.addEventListener('click', () => {

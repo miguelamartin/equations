@@ -823,7 +823,7 @@
 
   function showProblem() {
     currentProblem = generateProblem(state.level);
-    elProblem.textContent = currentProblem.display;
+    elProblem.innerHTML = currentProblem.display;
     elAnswer.value = '';
     elAnswer.disabled = false;
     elFeedback.className = '';

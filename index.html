@@ -506,25 +506,37 @@
   // x + b = c  or  ax = c
   function genLevel1() {
     if (Math.random() < 0.5) {
-      const b = rnd(-10, 10, true);
-      const x = rnd(-10, 10, true);
+      const b = rnd(-9, 9, true);
+      const x = rnd(-9, 9, true);
       const c = x + b;
       const expr = b >= 0 ? `x + ${b}` : `x - ${Math.abs(b)}`;
       const op = b >= 0 ? `restamos ${b}` : `sumamos ${Math.abs(b)}`;
       const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
-      return maybeFlip({
+      // flip: show as c = x+b half the time
+      if (Math.random() < 0.5) {
+        return {
+          display: `${c} = ${expr}`,
+          answer: x,
+          explanation: steps(`${op} a ambos lados`, `${c} ${neg} = x + ${b} ${neg}`, `x = ${x}`)
+        };
+      }
+      return {
         display: `${expr} = ${c}`,
         answer: x,
-        explanation: steps(
-          `${op} a ambos lados`,
-          `x + ${b} ${neg} = ${c} ${neg}`,
-          `x = ${x}`
-        )
-      });
+        explanation: steps(`${op} a ambos lados`, `x + ${b} ${neg} = ${c} ${neg}`, `x = ${x}`)
+      };
     } else {
-      const a = rndNZ(10);
-      const x = rnd(-10, 10, true);
+      const a = rndNZ(6);
+      const x = rnd(-9, 9, true);
       const c = a * x;
+      // flip: show as c = ax half the time
+      if (Math.random() < 0.5) {
+        return {
+          display: `${c} = ${coef(a)}`,
+          answer: x,
+          explanation: steps(...divSteps(coef(a), a, c))
+        };
+      }
       return {
         display: `${coef(a)} = ${c}`,
         answer: x,
@@ -536,14 +548,27 @@
   // ── Level 2a: two-step  ──────────────────────────
   // ax + b = c
   function genLevel2() {
-    const a = rndNZ(8);
-    const b = rnd(-10, 10, true);
-    const N = pickNumerator(a, -8, 8); // N = a*x, possibly non-integer answer
+    const a = rndNZ(5);
+    const b = rnd(-8, 8, true);
+    const N = pickNumerator(a, -6, 6); // N = a*x, possibly non-integer answer
     const c = N + b;
     const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
     const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
     const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
-    return maybeFlip({
+    // flip: show as c = ax+b half the time
+    if (Math.random() < 0.5) {
+      return {
+        display: `${c} = ${lhs}`,
+        answer: rational(N, a).val,
+        explanation: steps(
+          step1,
+          `${c} ${neg} = ${coef(a)} + ${b} ${neg}`,
+          `${N} = ${coef(a)}`,
+          ...divSteps(coef(a), a, N)
+        )
+      };
+    }
+    return {
       display: `${lhs} = ${c}`,
       answer: rational(N, a).val,
       explanation: steps(
@@ -552,21 +577,34 @@
         `${coef(a)} = ${N}`,
         ...divSteps(coef(a), a, N)
       )
-    });
+    };
   }
 
   // ── Level 2b: negatives & fractions  ─────────────
   // ax + b = c  or  x/d + b = c
   function genLevel3() {
     if (Math.random() < 0.5) {
-      const a = rndNZ(10);
-      const b = rnd(-15, 15, true);
-      const N = pickNumerator(a, -10, 10);
+      const a = rndNZ(6);
+      const b = rnd(-8, 8, true);
+      const N = pickNumerator(a, -6, 6);
       const c = N + b;
       const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
       const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
-      return maybeFlip({
+      // flip: show as c = ax+b half the time
+      if (Math.random() < 0.5) {
+        return {
+          display: `${c} = ${lhs}`,
+          answer: rational(N, a).val,
+          explanation: steps(
+            step1,
+            `${c} ${neg} = ${coef(a)} + ${b} ${neg}`,
+            `${N} = ${coef(a)}`,
+            ...divSteps(coef(a), a, N)
+          )
+        };
+      }
+      return {
         display: `${lhs} = ${c}`,
         answer: rational(N, a).val,
         explanation: steps(
@@ -575,16 +613,31 @@
           `${coef(a)} = ${N}`,
           ...divSteps(coef(a), a, N)
         )
-      });
+      };
     } else {
-      const d = rnd(2, 6);
-      const b = rnd(-10, 10, true);
-      const x = rnd(-5, 5, true) * d;
+      const d = rnd(2, 5);
+      const b = rnd(-8, 8, true);
+      const x = rnd(-4, 4, true) * d;
       const c = x / d + b;
       const lhs = b >= 0 ? `${frac('x', d)} + ${b}` : `${frac('x', d)} - ${Math.abs(b)}`;
       const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
-      return maybeFlip({
+      // flip half the time
+      if (Math.random() < 0.5) {
+        return {
+          display: `${c} = ${lhs}`,
+          answer: x,
+          explanation: steps(
+            step1,
+            `${c} ${neg} = ${frac('x', d)} + ${b} ${neg}`,
+            `${c - b} = ${frac('x', d)}`,
+            `multiplicamos ambos lados por ${d}`,
+            `${c - b} · ${d} = ${frac('x', d)} · ${d}`,
+            `x = ${x}`
+          )
+        };
+      }
+      return {
         display: `${lhs} = ${c}`,
         answer: x,
         explanation: steps(
@@ -595,7 +648,7 @@
           `${frac('x', d)} · ${d} = ${c - b} · ${d}`,
           `x = ${x}`
         )
-      });
+      };
     }
   }
 
@@ -609,9 +662,9 @@
 
     if (branch === 0) {
       // a(x+b) = c  →  x+b = c/a  →  x = c/a - b
-      const a = rnd(2, 6);
-      const b = rnd(-8, 8, true);
-      const N = pickNumerator(a, -8, 8); // N = a*x, so c = N + a*b
+      const a = rnd(2, 5);
+      const b = rnd(-6, 6, true);
+      const N = pickNumerator(a, -6, 6); // N = a*x, so c = N + a*b
       const c = N + a * b;
       const xPlusB = `x ${sign(b)}`;
       const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
@@ -634,9 +687,9 @@
 
     if (branch === 1) {
       // a(bx+c) = d  →  bx+c = d/a  →  bx = d/a - c  →  x = (d/a-c)/b
-      const a = rnd(2, 5);
-      const b = rndNZ(4);
-      const c = rnd(-6, 6, true);
+      const a = rnd(2, 4);
+      const b = rndNZ(3);
+      const c = rnd(-5, 5, true);
       const x = rnd(-5, 5, true);
       const d = a * (b * x + c);
       const inner = `${coef(b)} ${sign(c)}`;
@@ -659,9 +712,9 @@
 
     if (branch === 2) {
       // c = a(bx+e)  — parenthesis on the right, same math flipped
-      const a = rnd(2, 5);
-      const b = rndNZ(4);
-      const e = rnd(-6, 6, true);
+      const a = rnd(2, 4);
+      const b = rndNZ(3);
+      const e = rnd(-5, 5, true);
       const x = rnd(-5, 5, true);
       const c = a * (b * x + e);
       const inner = `${coef(b)} ${sign(e)}`;
@@ -683,11 +736,11 @@
     }
 
     // branch === 3: a(x+b) = c(x+d) — parenthesis on both sides
-    const a = rnd(2, 6);
+    const a = rnd(2, 5);
     let c;
-    do { c = rnd(2, 6); } while (c === a);
-    const b = rnd(-6, 6, true);
-    const x = rnd(-6, 6, true);
+    do { c = rnd(2, 5); } while (c === a);
+    const b = rnd(-5, 5, true);
+    const x = rnd(-5, 5, true);
     // derive d: a*(x+b) = c*(x+d)  →  d = (a*(x+b) - c*x) / c
     const lhs = a * (x + b);
     if (lhs % c !== 0) return genLevel4();
@@ -725,12 +778,12 @@
   // ── Level 3b: variables on both sides  ───────────
   // ax + b = cx + d
   function genLevel5() {
-    const a = rndNZ(8);
+    const a = rndNZ(6);
     let c;
-    do { c = rndNZ(8); } while (c === a);
+    do { c = rndNZ(6); } while (c === a);
     const ac = a - c;
-    const N = pickNumerator(ac, -8, 8); // N = ac*x, all equation constants stay integer
-    const b = rnd(-10, 10, true);
+    const N = pickNumerator(ac, -6, 6); // N = ac*x, all equation constants stay integer
+    const b = rnd(-8, 8, true);
     const d = N + b;
     if (d === 0) return genLevel5();
     const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
@@ -761,7 +814,7 @@
       const a = rnd(2, 4);
       const b = rndNZ(3);
       const c = rnd(-5, 5, true);
-      const d = rndNZ(4);
+      const d = rndNZ(3);
       const total = a * b + d;
       if (total === 0) return genLevel6();
       const N = pickNumerator(total, -5, 5); // N = total*x; e = N + ac stays integer
@@ -771,7 +824,7 @@
       const dStr = d > 0 ? `+ ${d}x` : `- ${Math.abs(d)}x`;
       const negAc = ac >= 0 ? `− ${ac}` : `+ ${Math.abs(ac)}`;
       const moveConst = ac >= 0 ? `restamos ${ac} a ambos lados` : `sumamos ${Math.abs(ac)} a ambos lados`;
-      return maybeFlip({
+      return {
         display: `${a}(${coef(b)} ${sign(c)}) ${dStr} = ${e}`,
         answer: rational(N, total).val,
         explanation: steps(
@@ -786,11 +839,11 @@
         )
       });
     } else {
-      const a = rnd(2, 6);
+      const a = rnd(2, 5);
       let c;
-      do { c = rnd(2, 6); } while (c === a);
+      do { c = rnd(2, 5); } while (c === a);
       const b = rnd(-5, 5, true);
-      const x = rnd(-6, 6, true);
+      const x = rnd(-5, 5, true);
       const numerator = (a - c) * x + a * b;
       if (numerator % c !== 0) return genLevel6();
       const d = numerator / c;
@@ -828,17 +881,33 @@
 
     if (type === 0) {
       // (ax + b) / d = c  →  ax + b = c*d  →  ax = c*d - b  →  x = (c*d - b)/a
-      const d = rnd(2, 6);
-      const a = rndNZ(5);
-      const x = rnd(-8, 8, true);
-      const b = rnd(-10, 10, true);
+      const d = rnd(2, 5);
+      const a = rndNZ(4);
+      const x = rnd(-6, 6, true);
+      const b = rnd(-7, 7, true);
       const cd = a * x + b;          // c*d
       if (cd % d !== 0) return genLevel7();
       const c = cd / d;
       const rhs = cd - b;            // a*x
       const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
-      return maybeFlip({
+      // flip: show as c = (ax+b)/d half the time
+      if (Math.random() < 0.5) {
+        return {
+          display: `${c} = ${frac(`${coef(a)} ${sign(b)}`, d)}`,
+          answer: x,
+          explanation: steps(
+            `multiplicamos ambos lados por ${d}`,
+            `${c} · ${d} = ${frac(`${coef(a)} ${sign(b)}`, d)} · ${d}`,
+            `${cd} = ${coef(a)} ${sign(b)}`,
+            moveB,
+            `${cd} ${negB} = ${coef(a)} ${sign(b)} ${negB}`,
+            `${rhs} = ${coef(a)}`,
+            ...divSteps(coef(a), a, rhs)
+          )
+        };
+      }
+      return {
         display: `${frac(`${coef(a)} ${sign(b)}`, d)} = ${c}`,
         answer: x,
         explanation: steps(
@@ -851,23 +920,39 @@
           `${coef(a)} = ${rhs}`,
           ...divSteps(coef(a), a, rhs)
         )
-      });
+      };
     }
 
     if (type === 1) {
       // ax/d + b = c  →  ax/d = c - b  →  ax = (c-b)*d  →  x = (c-b)*d / a
-      const d = rnd(2, 6);
-      const a = rndNZ(5);
-      const x = rnd(-8, 8, true);
+      const d = rnd(2, 5);
+      const a = rndNZ(4);
+      const x = rnd(-6, 6, true);
       if ((a * x) % d !== 0) return genLevel7(); // ensure ax/d is integer for display clarity
-      const b = rnd(-10, 10, true);
+      const b = rnd(-7, 7, true);
       const c = (a * x) / d + b;
       const cb = c - b;             // ax/d value
       const rhs = cb * d;           // ax
       const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       const axFrac = a === 1 ? frac('x', d) : a === -1 ? frac('-x', d) : frac(`${a}x`, d);
-      return maybeFlip({
+      // flip: show as c = ax/d + b half the time
+      if (Math.random() < 0.5) {
+        return {
+          display: `${c} = ${axFrac} ${sign(b)}`,
+          answer: x,
+          explanation: steps(
+            moveB,
+            `${c} ${negB} = ${axFrac} ${sign(b)} ${negB}`,
+            `${cb} = ${axFrac}`,
+            `multiplicamos ambos lados por ${d}`,
+            `${cb} · ${d} = ${axFrac} · ${d}`,
+            `${rhs} = ${coef(a)}`,
+            ...divSteps(coef(a), a, rhs)
+          )
+        };
+      }
+      return {
         display: `${axFrac} ${sign(b)} = ${c}`,
         answer: x,
         explanation: steps(
@@ -880,19 +965,19 @@
           `${coef(a)} = ${rhs}`,
           ...divSteps(coef(a), a, rhs)
         )
-      });
+      };
     }
 
     // type === 2
     // (ax + b) / d = cx + e  →  ax + b = (cx + e)*d  →  ax + b = cdx + ed
     // →  (a - cd)x = ed - b
-    const d = rnd(2, 5);
-    const a = rndNZ(5);
+    const d = rnd(2, 4);
+    const a = rndNZ(4);
     let cCoef;
-    do { cCoef = rndNZ(4); } while (cCoef === a);
-    const x = rnd(-6, 6, true);
-    const b = rnd(-8, 8, true);
-    const e = rnd(-8, 8, true);
+    do { cCoef = rndNZ(3); } while (cCoef === a);
+    const x = rnd(-5, 5, true);
+    const b = rnd(-6, 6, true);
+    const e = rnd(-6, 6, true);
     const lhsNum = a * x + b;        // numerator of left fraction
     if (lhsNum % d !== 0) return genLevel7();
     const rhsVal = lhsNum / d;       // must equal cx + e
@@ -938,14 +1023,14 @@
       // (ax+b)/d = (cx+e)/f
       // multiply both sides by lcm(d,f): f*(ax+b) = d*(cx+e)
       // fax + fb = dcx + de  →  (fa-dc)x = de - fb
-      const d = rnd(2, 6);
+      const d = rnd(2, 5);
       let f;
-      do { f = rnd(2, 6); } while (f === d);
-      const a = rndNZ(5);
+      do { f = rnd(2, 5); } while (f === d);
+      const a = rndNZ(4);
       let c;
-      do { c = rndNZ(5); } while (c === a);
-      const x = rnd(-6, 6, true);
-      const b = rnd(-8, 8, true);
+      do { c = rndNZ(4); } while (c === a);
+      const x = rnd(-5, 5, true);
+      const b = rnd(-6, 6, true);
       // derive e so that (ax+b)/d = (cx+e)/f holds exactly
       // e = f*(ax+b)/d - cx; need (ax+b) divisible by d
       const lhsNum = a * x + b;
@@ -991,13 +1076,13 @@
     if (type === 1) {
       // a(bx+c) / d = ex + f
       // a*(bx+c) = d*(ex+f)  →  abx + ac = dex + df  →  (ab-de)x = df - ac
-      const d = rnd(2, 5);
-      const a = rnd(2, 5);
-      const b = rndNZ(4);
-      const c = rnd(-6, 6, true);
+      const d = rnd(2, 4);
+      const a = rnd(2, 4);
+      const b = rndNZ(3);
+      const c = rnd(-5, 5, true);
       let e;
-      do { e = rndNZ(5); } while (e * d === a * b); // avoid coefX === 0
-      const x = rnd(-6, 6, true);
+      do { e = rndNZ(4); } while (e * d === a * b); // avoid coefX === 0
+      const x = rnd(-5, 5, true);
       // derive f: a*(bx+c)/d = ex+f  →  f = a*(bx+c)/d - ex
       const inner = a * (b * x + c);
       if (inner % d !== 0) return genLevel8();
@@ -1037,14 +1122,14 @@
     if (type === 2) {
       // (ax+b)/d = e(cx+f)
       // ax+b = d*e*(cx+f)  →  ax+b = decx + def  →  (a-dec)x = def - b
-      const d = rnd(2, 5);
-      const e = rnd(2, 4);
+      const d = rnd(2, 4);
+      const e = rnd(2, 3);
       const de = d * e;
-      const a = rndNZ(5);
+      const a = rndNZ(4);
       let c;
-      do { c = rndNZ(4); } while (a === de * c); // avoid coefX === 0
+      do { c = rndNZ(3); } while (a === de * c); // avoid coefX === 0
       const x = rnd(-5, 5, true);
-      const b = rnd(-8, 8, true);
+      const b = rnd(-6, 6, true);
       // derive f: (ax+b)/d = e*(cx+f)  →  f = (ax+b)/(d*e) - cx
       const lhsNum = a * x + b;
       if (lhsNum % de !== 0) return genLevel8();
@@ -1085,13 +1170,13 @@
     // (ax+b)/d + cx = ex + f
     // multiply by d: ax+b + cdx = dex + df  →  (a+cd)x + b = dex + df
     // →  (a+cd-de)x = df - b
-    const d = rnd(2, 5);
-    const a = rndNZ(5);
-    const c = rndNZ(4);
+    const d = rnd(2, 4);
+    const a = rndNZ(4);
+    const c = rndNZ(3);
     let e;
-    do { e = rndNZ(5); } while (a + c * d === e * d); // avoid coefX === 0
-    const x = rnd(-6, 6, true);
-    const b = rnd(-8, 8, true);
+    do { e = rndNZ(4); } while (a + c * d === e * d); // avoid coefX === 0
+    const x = rnd(-5, 5, true);
+    const b = rnd(-6, 6, true);
     // derive f: (ax+b)/d + cx = ex + f  →  f = (ax+b)/d + cx - ex
     const lhsNum = a * x + b;
     if (lhsNum % d !== 0) return genLevel8();

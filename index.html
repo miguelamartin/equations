@@ -483,9 +483,14 @@
   }
 
   // ── Level 3a: parentheses  ───────────────────────
-  // a(x + b) = c  or  a(bx + c) = d
+  // Branch 0: a(x+b) = c          — parenthesis left
+  // Branch 1: a(bx+c) = d         — parenthesis left, x coefficient
+  // Branch 2: c = a(x+b) or d = a(bx+c)  — parenthesis right
+  // Branch 3: a(x+b) = c(x+d)     — parenthesis both sides
   function genLevel4() {
-    if (Math.random() < 0.5) {
+    const branch = Math.floor(Math.random() * 4);
+
+    if (branch === 0) {
       const a = rnd(2, 6);
       const b = rnd(-8, 8, true);
       const x = rnd(-8, 8, true);
@@ -505,7 +510,9 @@
           `x = ${x}`
         )
       };
-    } else {
+    }
+
+    if (branch === 1) {
       const a = rnd(2, 5);
       const b = rndNZ(4);
       const c = rnd(-6, 6, true);
@@ -528,6 +535,70 @@
         )
       };
     }
+
+    if (branch === 2) {
+      // c = a(bx+e)  — parenthesis on the right, same math flipped
+      const a = rnd(2, 5);
+      const b = rndNZ(4);
+      const e = rnd(-6, 6, true);
+      const x = rnd(-5, 5, true);
+      const c = a * (b * x + e);
+      const inner = `${coef(b)} ${sign(e)}`;
+      const negE = e >= 0 ? `− ${e}` : `+ ${Math.abs(e)}`;
+      const stepE = e >= 0 ? `restamos ${e} a ambos lados` : `sumamos ${Math.abs(e)} a ambos lados`;
+      return {
+        display: `${c} = ${a}(${inner})`,
+        answer: x,
+        explanation: steps(
+          `dividimos ambos lados entre ${a}`,
+          `${frac(c, a)} = ${frac(`${a}(${inner})`, a)}`,
+          `${c / a} = ${inner}`,
+          stepE,
+          `${c / a} ${negE} = ${coef(b)} ${sign(e)} ${negE}`,
+          `${c / a - e} = ${coef(b)}`,
+          ...divSteps(coef(b), b, c / a - e)
+        )
+      };
+    }
+
+    // branch === 3: a(x+b) = c(x+d) — parenthesis on both sides
+    const a = rnd(2, 6);
+    let c;
+    do { c = rnd(2, 6); } while (c === a);
+    const b = rnd(-6, 6, true);
+    const x = rnd(-6, 6, true);
+    // derive d: a*(x+b) = c*(x+d)  →  d = (a*(x+b) - c*x) / c
+    const lhs = a * (x + b);
+    if (lhs % c !== 0) return genLevel4();
+    const xd = lhs / c;        // x + d
+    const d = xd - x;
+    const ab = a * b;
+    const cd = c * d;
+    const coefDiff = a - c;
+    if (coefDiff === 0) return genLevel4();
+    const constR = cd - ab;
+    if (constR % coefDiff !== 0) return genLevel4();
+    const cNeg = c > 0 ? `− ${coef(c)}` : `+ ${coef(Math.abs(c))}`;
+    const moveX = c > 0 ? `restamos ${coef(c)} a ambos lados` : `sumamos ${coef(Math.abs(c))} a ambos lados`;
+    const abNeg = ab >= 0 ? `− ${ab}` : `+ ${Math.abs(ab)}`;
+    const moveB = ab >= 0 ? `restamos ${ab} a ambos lados` : `sumamos ${Math.abs(ab)} a ambos lados`;
+    return {
+      display: `${a}(x ${sign(b)}) = ${c}(x ${sign(d)})`,
+      answer: x,
+      explanation: steps(
+        `expandimos: ${a}(x ${sign(b)})`,
+        `${coef(a)} ${sign(ab)} = ${c}(x ${sign(d)})`,
+        `expandimos: ${c}(x ${sign(d)})`,
+        `${coef(a)} ${sign(ab)} = ${coef(c)} ${sign(cd)}`,
+        moveX,
+        `${coef(a)} ${cNeg} ${sign(ab)} = ${coef(c)} ${cNeg} ${sign(cd)}`,
+        `${coef(coefDiff)} ${sign(ab)} = ${cd}`,
+        moveB,
+        `${coef(coefDiff)} ${sign(ab)} ${abNeg} = ${cd} ${abNeg}`,
+        `${coef(coefDiff)} = ${constR}`,
+        ...divSteps(coef(coefDiff), coefDiff, constR)
+      )
+    };
   }
 
   // ── Level 3b: variables on both sides  ───────────

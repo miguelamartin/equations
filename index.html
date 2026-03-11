@@ -373,6 +373,10 @@
     return `<div class="steps">${lines.map(l => `<div class="step">${l}</div>`).join('')}</div>`;
   }
 
+  // Greatest common divisor and least common multiple
+  function gcd(p, q) { return q === 0 ? Math.abs(p) : gcd(q, p % q); }
+  function lcm(p, q) { return Math.abs(p * q) / gcd(p, q); }
+
   // Returns the division steps for "coefExpr / divisor = numerator / divisor → x = result".
   // Skips the fraction line when divisor is 1 (trivial). Keeps it for -1 and all other values.
   function divSteps(coefExpr, divisor, numerator) {
@@ -834,10 +838,8 @@
       if (coefX === 0) return genLevel8();
       const constR = de - fb;
       if (constR % coefX !== 0) return genLevel8();
-      // lcm for display step
-      function gcd(p, q) { return q === 0 ? p : gcd(q, p % q); }
-      const g = gcd(d, f), lcm = d * f / g;
-      const multL = lcm / d, multR = lcm / f;
+      const lcmDF = lcm(d, f);
+      const multL = lcmDF / d, multR = lcmDF / f;
       const fbNeg = fb >= 0 ? `− ${fb}` : `+ ${Math.abs(fb)}`;
       const moveB = fb >= 0 ? `restamos ${fb} a ambos lados` : `sumamos ${Math.abs(fb)} a ambos lados`;
       const dcNeg = dc > 0 ? `− ${coef(dc)}` : `+ ${coef(Math.abs(dc))}`;
@@ -846,7 +848,8 @@
         display: `${frac(`${coef(a)} ${sign(b)}`, d)} = ${frac(`${coef(c)} ${sign(e)}`, f)}`,
         answer: x,
         explanation: steps(
-          `multiplicamos ambos lados por ${lcm}`,
+          `mínimo común múltiplo de ${d} y ${f}: mcm(${d}, ${f}) = ${lcmDF}`,
+          `multiplicamos ambos lados por ${lcmDF}`,
           `${multL}·(${coef(a)} ${sign(b)}) = ${multR}·(${coef(c)} ${sign(e)})`,
           `${coef(fa)} ${sign(fb)} = ${coef(dc)} ${sign(de)}`,
           moveB,

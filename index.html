@@ -267,7 +267,44 @@
     }
     #next:hover { background: #059669; }
 
-    /* ── Level-up overlay ─────────────────────────── */
+    /* ── Explanation toggle ────────────────────────── */
+    .explanation-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      opacity: 0.85;
+      user-select: none;
+    }
+    .explanation-toggle label { cursor: pointer; }
+    .toggle-switch {
+      position: relative;
+      width: 2.4rem;
+      height: 1.3rem;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.3);
+      border-radius: 999px;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+    .toggle-switch input:checked + .toggle-track { background: rgba(255,255,255,0.85); }
+    .toggle-thumb {
+      position: absolute;
+      top: 0.18rem;
+      left: 0.18rem;
+      width: 0.95rem;
+      height: 0.95rem;
+      background: #4361ee;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      pointer-events: none;
+    }
+    .toggle-switch input:checked ~ .toggle-thumb { transform: translateX(1.1rem); }
   </style>
 </head>
 <body>
@@ -275,6 +312,15 @@
     <h1>Álgebra</h1>
     <div class="stats">
       <div class="stat">Puntos<span id="hdr-points">0</span></div>
+      <div class="explanation-toggle">
+        <label for="explanation-mode">Simplificado</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="explanation-mode" />
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+        <label for="explanation-mode">Completo</label>
+      </div>
     </div>
   </header>
 

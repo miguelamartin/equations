@@ -272,9 +272,10 @@
       display: flex;
       align-items: center;
       gap: 0.4rem;
-      font-size: 0.75rem;
-      opacity: 0.85;
+      font-size: 0.8rem;
+      color: #4a5568;
       user-select: none;
+      margin-left: auto;
     }
     .explanation-toggle label { cursor: pointer; }
     .toggle-switch {
@@ -287,19 +288,19 @@
     .toggle-track {
       position: absolute;
       inset: 0;
-      background: rgba(255,255,255,0.3);
+      background: #d1d5db;
       border-radius: 999px;
       transition: background 0.2s;
       cursor: pointer;
     }
-    .toggle-switch input:checked + .toggle-track { background: rgba(255,255,255,0.85); }
+    .toggle-switch input:checked + .toggle-track { background: #4361ee; }
     .toggle-thumb {
       position: absolute;
       top: 0.18rem;
       left: 0.18rem;
       width: 0.95rem;
       height: 0.95rem;
-      background: #4361ee;
+      background: white;
       border-radius: 50%;
       transition: transform 0.2s;
       pointer-events: none;
@@ -312,21 +313,20 @@
     <h1>Álgebra</h1>
     <div class="stats">
       <div class="stat">Puntos<span id="hdr-points">0</span></div>
-      <div class="explanation-toggle">
-        <label for="explanation-mode">Simplificado</label>
-        <label class="toggle-switch">
-          <input type="checkbox" id="explanation-mode" />
-          <span class="toggle-track"></span>
-          <span class="toggle-thumb"></span>
-        </label>
-        <label for="explanation-mode">Completo</label>
-      </div>
     </div>
   </header>
 
   <main>
     <div class="level-row">
       <div class="level-badge" id="level-badge" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">Nivel <span id="level-num">1</span></div>
+      <div class="explanation-toggle">
+        <label class="toggle-switch">
+          <input type="checkbox" id="explanation-mode" />
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+        <label for="explanation-mode">Explicación detallada</label>
+      </div>
       <div id="level-menu" role="menu">
         <button class="level-option" data-level="1" role="menuitem"><span class="level-dot"></span>Nivel 1 — un solo paso</button>
         <button class="level-option" data-level="2" role="menuitem"><span class="level-dot"></span>Nivel 2 — dos pasos</button>
@@ -1293,6 +1293,14 @@
   const elLevelBadge  = document.getElementById('level-badge');
   const elLevelMenu   = document.getElementById('level-menu');
   const elLevelOptions = elLevelMenu.querySelectorAll('.level-option');
+  const elExplanationMode = document.getElementById('explanation-mode');
+
+  // Persist explanation toggle
+  const EXPL_KEY = 'math_expl_detailed';
+  elExplanationMode.checked = localStorage.getItem(EXPL_KEY) !== 'false';
+  elExplanationMode.addEventListener('change', () => {
+    localStorage.setItem(EXPL_KEY, elExplanationMode.checked);
+  });
   const elDisplay   = document.getElementById('answer-display');
   const elKeypad    = document.getElementById('keypad');
 

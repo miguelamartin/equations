@@ -148,7 +148,8 @@
       transition: background 0.2s;
       width: 100%;
     }
-    #submit:hover { background: #3451d1; }
+    #submit:hover:not(:disabled) { background: #3451d1; }
+    #submit:disabled { background: #d1d5db; color: #9ca3af; cursor: not-allowed; }
     #submit:focus-visible,
     #next:focus-visible,
     #levelup button:focus-visible {
@@ -837,7 +838,7 @@
           `${coef(total)} = ${N}`,
           ...divSteps(coef(total), total, N)
         )
-      });
+      };
     } else {
       const a = rnd(2, 5);
       let c;
@@ -1322,8 +1323,10 @@
     if (!val) {
       elDisplay.innerHTML = '<span class="placeholder">x = ?</span>';
       elDisplay.classList.remove('has-value');
+      elSubmit.disabled = true;
       return;
     }
+    elSubmit.disabled = false;
     elDisplay.classList.add('has-value');
     const slash = val.indexOf('/');
     if (slash !== -1) {
@@ -1391,6 +1394,7 @@
     elProblem.innerHTML = currentProblem.display;
     elAnswer.value = '';
     elAnswer.disabled = false;
+    elSubmit.disabled = true;
     updateDisplay();
     setKeypadDisabled(false);
     elFeedback.className = '';

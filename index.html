@@ -416,14 +416,16 @@
       return a * x;
     }
     // fractional answer: pick N that is NOT divisible by a but gives clean fraction
-    for (let attempt = 0; attempt < 20; attempt++) {
-      const N = rnd(a * intMin, a * intMax, true);
-      if (N % a === 0) continue;           // skip integer results
-      const den = a / gcd(Math.abs(a), Math.abs(N));
-      if (den >= 2 && den <= 4) return N;  // clean fraction with small denominator
+    const absA = Math.abs(a);
+    const lo = absA * intMin, hi = absA * intMax;
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const N = rnd(lo, hi, true);
+      if (N % absA === 0) continue;              // skip integer results
+      const den = absA / gcd(absA, Math.abs(N)); // denominator of N/absA reduced
+      if (den >= 2 && den <= 4) return N;        // clean fraction with small denominator
     }
     // fallback: integer answer
-    return a * rnd(intMin, intMax, true);
+    return absA * rnd(intMin, intMax, true);
   }
 
   // Returns the division steps for "coefExpr / divisor = numerator / divisor → x = result".

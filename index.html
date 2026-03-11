@@ -267,7 +267,45 @@
     }
     #next:hover { background: #059669; }
 
-    /* ── Level-up overlay ─────────────────────────── */
+    /* ── Explanation toggle ────────────────────────── */
+    .explanation-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: #4a5568;
+      user-select: none;
+      margin-left: auto;
+    }
+    .explanation-toggle label { cursor: pointer; }
+    .toggle-switch {
+      position: relative;
+      width: 2.4rem;
+      height: 1.3rem;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: #d1d5db;
+      border-radius: 999px;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+    .toggle-switch input:checked + .toggle-track { background: #4361ee; }
+    .toggle-thumb {
+      position: absolute;
+      top: 0.18rem;
+      left: 0.18rem;
+      width: 0.95rem;
+      height: 0.95rem;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      pointer-events: none;
+    }
+    .toggle-switch input:checked ~ .toggle-thumb { transform: translateX(1.1rem); }
   </style>
 </head>
 <body>
@@ -281,6 +319,14 @@
   <main>
     <div class="level-row">
       <div class="level-badge" id="level-badge" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">Nivel <span id="level-num">1</span></div>
+      <div class="explanation-toggle">
+        <label class="toggle-switch">
+          <input type="checkbox" id="explanation-mode" />
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+        <label for="explanation-mode">Explicación detallada</label>
+      </div>
       <div id="level-menu" role="menu">
         <button class="level-option" data-level="1" role="menuitem"><span class="level-dot"></span>Nivel 1 — un solo paso</button>
         <button class="level-option" data-level="2" role="menuitem"><span class="level-dot"></span>Nivel 2 — dos pasos</button>
@@ -400,6 +446,25 @@
     }).join('')}</div>`;
   }
 
+  // Signed label helpers for simplified phrasing
+  function signedVal(n) { return n >= 0 ? `+${n}` : `${n}`; }
+  function signedCoef(n) {
+    if (n === 1)  return '+x';
+    if (n === -1) return '-x';
+    return n >= 0 ? `+${n}x` : `${n}x`;
+  }
+
+  // Simplified division step: phrase + intermediate + result
+  function divStepsSimple(divisor, numerator) {
+    const r = rational(numerator, divisor);
+    if (divisor === 1) return [`x = ${r.display}`];
+    const absD = Math.abs(divisor);
+    const phrase = divisor > 0
+      ? `el ${absD} que está multiplicando pasa al otro lado dividiendo`
+      : `el −${absD} que está multiplicando pasa al otro lado dividiendo`;
+    return [phrase, `x = ${frac(numerator, divisor)}`, `x = ${r.display}`];
+  }
+
   // Greatest common divisor and least common multiple
   function gcd(p, q) { return q === 0 ? Math.abs(p) : gcd(q, p % q); }
   function lcm(p, q) { return Math.abs(p * q) / gcd(p, q); }
@@ -459,18 +524,22 @@
       const expr = b >= 0 ? `x + ${b}` : `x - ${Math.abs(b)}`;
       const op = b >= 0 ? `restamos ${b}` : `sumamos ${Math.abs(b)}`;
       const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
+      const transpB = `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`;
+      const interB = `x = ${c} ${signedVal(-b)}`;
       // flip: show as c = x+b half the time
       if (Math.random() < 0.5) {
         return {
           display: `${c} = ${expr}`,
           answer: x,
-          explanation: steps(`${op} a ambos lados`, `${c} ${neg} = x + ${b} ${neg}`, `x = ${x}`)
+          explanation: steps(`${op} a ambos lados`, `${c} ${neg} = x + ${b} ${neg}`, `x = ${x}`),
+          explanationSimple: steps(transpB, interB, `x = ${x}`)
         };
       }
       return {
         display: `${expr} = ${c}`,
         answer: x,
-        explanation: steps(`${op} a ambos lados`, `x + ${b} ${neg} = ${c} ${neg}`, `x = ${x}`)
+        explanation: steps(`${op} a ambos lados`, `x + ${b} ${neg} = ${c} ${neg}`, `x = ${x}`),
+        explanationSimple: steps(transpB, interB, `x = ${x}`)
       };
     } else {
       const a = rndNZ(6);
@@ -481,13 +550,15 @@
         return {
           display: `${c} = ${coef(a)}`,
           answer: x,
-          explanation: steps(...divSteps(coef(a), a, c))
+          explanation: steps(...divSteps(coef(a), a, c)),
+          explanationSimple: steps(...divStepsSimple(a, c))
         };
       }
       return {
         display: `${coef(a)} = ${c}`,
         answer: x,
-        explanation: steps(...divSteps(coef(a), a, c))
+        explanation: steps(...divSteps(coef(a), a, c)),
+        explanationSimple: steps(...divStepsSimple(a, c))
       };
     }
   }
@@ -502,6 +573,7 @@
     const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
     const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
     const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
+    const transpB2 = `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`;
     // flip: show as c = ax+b half the time
     if (Math.random() < 0.5) {
       return {
@@ -512,7 +584,8 @@
           `${c} ${neg} = ${coef(a)} + ${b} ${neg}`,
           `${N} = ${coef(a)}`,
           ...divSteps(coef(a), a, N)
-        )
+        ),
+        explanationSimple: steps(transpB2, `${N} = ${c} ${signedVal(-b)}`, `${N} = ${coef(a)}`, ...divStepsSimple(a, N))
       };
     }
     return {
@@ -523,7 +596,8 @@
         `${coef(a)} + ${b} ${neg} = ${c} ${neg}`,
         `${coef(a)} = ${N}`,
         ...divSteps(coef(a), a, N)
-      )
+      ),
+      explanationSimple: steps(transpB2, `${coef(a)} = ${c} ${signedVal(-b)}`, `${coef(a)} = ${N}`, ...divStepsSimple(a, N))
     };
   }
 
@@ -538,6 +612,7 @@
       const lhs = b >= 0 ? `${coef(a)} + ${b}` : `${coef(a)} - ${Math.abs(b)}`;
       const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
+      const transpB3 = `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`;
       // flip: show as c = ax+b half the time
       if (Math.random() < 0.5) {
         return {
@@ -548,7 +623,8 @@
             `${c} ${neg} = ${coef(a)} + ${b} ${neg}`,
             `${N} = ${coef(a)}`,
             ...divSteps(coef(a), a, N)
-          )
+          ),
+          explanationSimple: steps(transpB3, `${N} = ${c} ${signedVal(-b)}`, `${N} = ${coef(a)}`, ...divStepsSimple(a, N))
         };
       }
       return {
@@ -559,7 +635,8 @@
           `${coef(a)} + ${b} ${neg} = ${c} ${neg}`,
           `${coef(a)} = ${N}`,
           ...divSteps(coef(a), a, N)
-        )
+        ),
+        explanationSimple: steps(transpB3, `${coef(a)} = ${c} ${signedVal(-b)}`, `${coef(a)} = ${N}`, ...divStepsSimple(a, N))
       };
     } else {
       const d = rnd(2, 5);
@@ -569,6 +646,8 @@
       const lhs = b >= 0 ? `${frac('x', d)} + ${b}` : `${frac('x', d)} - ${Math.abs(b)}`;
       const step1 = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       const neg = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
+      const transpB3b = `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`;
+      const transpD3b = `el ${d} que está dividiendo pasa al otro lado multiplicando`;
       // flip half the time
       if (Math.random() < 0.5) {
         return {
@@ -581,7 +660,8 @@
             `multiplicamos ambos lados por ${d}`,
             `${c - b} · ${d} = ${frac('x', d)} · ${d}`,
             `x = ${x}`
-          )
+          ),
+          explanationSimple: steps(transpB3b, `${c} ${signedVal(-b)} = ${frac('x', d)}`, `${c - b} = ${frac('x', d)}`, transpD3b, `x = ${c - b} · ${d}`, `x = ${x}`)
         };
       }
       return {
@@ -594,7 +674,8 @@
           `multiplicamos ambos lados por ${d}`,
           `${frac('x', d)} · ${d} = ${c - b} · ${d}`,
           `x = ${x}`
-        )
+        ),
+        explanationSimple: steps(transpB3b, `${frac('x', d)} = ${c} ${signedVal(-b)}`, `${frac('x', d)} = ${c - b}`, transpD3b, `x = ${c - b} · ${d}`, `x = ${x}`)
       };
     }
   }
@@ -628,6 +709,14 @@
           stepB,
           `x ${sign(b)} ${negB} = ${afterDiv.display} ${negB}`,
           `x = ${ans.display}`
+        ),
+        explanationSimple: steps(
+          `el ${a} que está multiplicando pasa al otro lado dividiendo`,
+          `${xPlusB} = ${frac(c, a)}`,
+          `${xPlusB} = ${afterDiv.display}`,
+          `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`,
+          `x = ${afterDiv.display} ${signedVal(-b)}`,
+          `x = ${ans.display}`
         )
       };
     }
@@ -653,6 +742,15 @@
           `${coef(b)} ${sign(c)} ${negC} = ${d / a} ${negC}`,
           `${coef(b)} = ${d / a - c}`,
           ...divSteps(coef(b), b, d / a - c)
+        ),
+        explanationSimple: steps(
+          `el ${a} que está multiplicando pasa al otro lado dividiendo`,
+          `${inner} = ${frac(d, a)}`,
+          `${inner} = ${d / a}`,
+          `el ${signedVal(c)} pasa al otro lado como ${signedVal(-c)}`,
+          `${inner} = ${d / a} ${signedVal(-c)}`,
+          `${coef(b)} = ${d / a - c}`,
+          ...divStepsSimple(b, d / a - c)
         )
       };
     }
@@ -678,6 +776,15 @@
           `${c / a} ${negE} = ${coef(b)} ${sign(e)} ${negE}`,
           `${c / a - e} = ${coef(b)}`,
           ...divSteps(coef(b), b, c / a - e)
+        ),
+        explanationSimple: steps(
+          `el ${a} que está multiplicando pasa al otro lado dividiendo`,
+          `${frac(c, a)} = ${inner}`,
+          `${c / a} = ${inner}`,
+          `el ${signedVal(e)} pasa al otro lado como ${signedVal(-e)}`,
+          `${c / a} ${signedVal(-e)} = ${inner}`,
+          `${c / a - e} = ${coef(b)}`,
+          ...divStepsSimple(b, c / a - e)
         )
       };
     }
@@ -718,6 +825,19 @@
         `${coef(coefDiff)} ${sign(ab)} ${abNeg} = ${cd} ${abNeg}`,
         `${coef(coefDiff)} = ${constR}`,
         ...divSteps(coef(coefDiff), coefDiff, constR)
+      ),
+      explanationSimple: steps(
+        `expandimos: ${a}(x ${sign(b)})`,
+        `${coef(a)} ${sign(ab)} = ${c}(x ${sign(d)})`,
+        `expandimos: ${c}(x ${sign(d)})`,
+        `${coef(a)} ${sign(ab)} = ${coef(c)} ${sign(cd)}`,
+        `el ${signedCoef(c)} pasa al otro lado como ${signedCoef(-c)}`,
+        `${coef(a)} ${signedCoef(-c)} ${sign(ab)} = ${cd}`,
+        `${coef(coefDiff)} ${sign(ab)} = ${cd}`,
+        `el ${signedVal(ab)} pasa al otro lado como ${signedVal(-ab)}`,
+        `${coef(coefDiff)} = ${cd} ${signedVal(-ab)}`,
+        `${coef(coefDiff)} = ${constR}`,
+        ...divStepsSimple(coefDiff, constR)
       )
     };
   }
@@ -750,6 +870,15 @@
         `${coef(ac)} ${sign(b)} ${bNeg} = ${d} ${bNeg}`,
         `${coef(ac)} = ${N}`,
         ...divSteps(coef(ac), ac, N)
+      ),
+      explanationSimple: steps(
+        `el ${signedCoef(c)} pasa al otro lado como ${signedCoef(-c)}`,
+        `${coef(a)} ${signedCoef(-c)} ${sign(b)} = ${d}`,
+        `${coef(ac)} ${sign(b)} = ${d}`,
+        `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`,
+        `${coef(ac)} = ${d} ${signedVal(-b)}`,
+        `${coef(ac)} = ${N}`,
+        ...divStepsSimple(ac, N)
       )
     };
   }
@@ -783,6 +912,16 @@
           `${coef(total)} ${sign(ac)} ${negAc} = ${e} ${negAc}`,
           `${coef(total)} = ${N}`,
           ...divSteps(coef(total), total, N)
+        ),
+        explanationSimple: steps(
+          `expandimos: ${a}(${coef(b)} ${sign(c)})`,
+          `${coef(ab)} ${sign(ac)} ${dStr} = ${e}`,
+          `combinamos términos con x: ${coef(ab)} ${dStr} = ${coef(total)}`,
+          `${coef(total)} ${sign(ac)} = ${e}`,
+          `el ${signedVal(ac)} pasa al otro lado como ${signedVal(-ac)}`,
+          `${coef(total)} = ${e} ${signedVal(-ac)}`,
+          `${coef(total)} = ${N}`,
+          ...divStepsSimple(total, N)
         )
       };
     } else {
@@ -814,6 +953,19 @@
           `${coef(ac)} ${sign(ab)} ${abNeg} = ${cd} ${abNeg}`,
           `${coef(ac)} = ${rhs2}`,
           ...divSteps(coef(ac), ac, rhs2)
+        ),
+        explanationSimple: steps(
+          `expandimos: ${a}(x ${sign(b)})`,
+          `${a}x ${sign(ab)} = ${c}(x ${sign(d)})`,
+          `expandimos: ${c}(x ${sign(d)})`,
+          `${a}x ${sign(ab)} = ${c}x ${sign(cd)}`,
+          `el ${signedCoef(c)} pasa al otro lado como ${signedCoef(-c)}`,
+          `${a}x ${signedCoef(-c)} ${sign(ab)} = ${cd}`,
+          `${coef(ac)} ${sign(ab)} = ${cd}`,
+          `el ${signedVal(ab)} pasa al otro lado como ${signedVal(-ab)}`,
+          `${coef(ac)} = ${cd} ${signedVal(-ab)}`,
+          `${coef(ac)} = ${rhs2}`,
+          ...divStepsSimple(ac, rhs2)
         )
       };
     }
@@ -838,6 +990,8 @@
       const rhs = cd - b;            // a*x
       const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
+      const transpD7a = `el ${d} que está dividiendo pasa al otro lado multiplicando`;
+      const transpB7a = `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`;
       // flip: show as c = (ax+b)/d half the time
       if (Math.random() < 0.5) {
         return {
@@ -851,6 +1005,13 @@
             `${cd} ${negB} = ${coef(a)} ${sign(b)} ${negB}`,
             `${rhs} = ${coef(a)}`,
             ...divSteps(coef(a), a, rhs)
+          ),
+          explanationSimple: steps(
+            transpD7a, `${c} · ${d} = ${coef(a)} ${sign(b)}`,
+            `${cd} = ${coef(a)} ${sign(b)}`,
+            transpB7a, `${cd} ${signedVal(-b)} = ${coef(a)}`,
+            `${rhs} = ${coef(a)}`,
+            ...divStepsSimple(a, rhs)
           )
         };
       }
@@ -866,6 +1027,13 @@
           `${coef(a)} ${sign(b)} ${negB} = ${cd} ${negB}`,
           `${coef(a)} = ${rhs}`,
           ...divSteps(coef(a), a, rhs)
+        ),
+        explanationSimple: steps(
+          transpD7a, `${coef(a)} ${sign(b)} = ${c} · ${d}`,
+          `${coef(a)} ${sign(b)} = ${cd}`,
+          transpB7a, `${coef(a)} = ${cd} ${signedVal(-b)}`,
+          `${coef(a)} = ${rhs}`,
+          ...divStepsSimple(a, rhs)
         )
       };
     }
@@ -883,6 +1051,8 @@
       const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
       const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
       const axFrac = a === 1 ? frac('x', d) : a === -1 ? frac('-x', d) : frac(`${a}x`, d);
+      const transpB7b = `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`;
+      const transpD7b = `el ${d} que está dividiendo pasa al otro lado multiplicando`;
       // flip: show as c = ax/d + b half the time
       if (Math.random() < 0.5) {
         return {
@@ -896,6 +1066,13 @@
             `${cb} · ${d} = ${axFrac} · ${d}`,
             `${rhs} = ${coef(a)}`,
             ...divSteps(coef(a), a, rhs)
+          ),
+          explanationSimple: steps(
+            transpB7b, `${c} ${signedVal(-b)} = ${axFrac}`,
+            `${cb} = ${axFrac}`,
+            transpD7b, `${cb} · ${d} = ${coef(a)}`,
+            `${rhs} = ${coef(a)}`,
+            ...divStepsSimple(a, rhs)
           )
         };
       }
@@ -911,6 +1088,13 @@
           `${frac(`${coef(a)} · ${d}`, d)} = ${cb} · ${d}`,
           `${coef(a)} = ${rhs}`,
           ...divSteps(coef(a), a, rhs)
+        ),
+        explanationSimple: steps(
+          transpB7b, `${axFrac} = ${c} ${signedVal(-b)}`,
+          `${axFrac} = ${cb}`,
+          transpD7b, `${coef(a)} = ${cb} · ${d}`,
+          `${coef(a)} = ${rhs}`,
+          ...divStepsSimple(a, rhs)
         )
       };
     }
@@ -954,6 +1138,18 @@
         `${coef(a)} ${cNeg} = ${coef(cd)} ${cNeg} ${sign(ed - b)}`,
         `${coef(coefDiff)} = ${constDiff}`,
         ...divSteps(coef(coefDiff), coefDiff, constDiff)
+      ),
+      explanationSimple: steps(
+        `el ${d} que está dividiendo pasa al otro lado multiplicando`,
+        `${coef(a)} ${sign(b)} = (${coef(cCoef)} ${sign(e)}) · ${d}`,
+        `${coef(a)} ${sign(b)} = ${coef(cd)} ${sign(ed)}`,
+        `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`,
+        `${coef(a)} = ${coef(cd)} ${sign(ed)} ${signedVal(-b)}`,
+        `${coef(a)} = ${coef(cd)} ${sign(ed - b)}`,
+        `el ${signedCoef(cd)} pasa al otro lado como ${signedCoef(-cd)}`,
+        `${coef(a)} ${signedCoef(-cd)} = ${constDiff}`,
+        `${coef(coefDiff)} = ${constDiff}`,
+        ...divStepsSimple(coefDiff, constDiff)
       )
     };
   }
@@ -1016,6 +1212,20 @@
           `${coef(fa)} ${dcNeg} = ${coef(dc)} ${dcNeg} ${sign(de - fb)}`,
           `${coef(coefX)} = ${constR}`,
           ...divSteps(coef(coefX), coefX, constR)
+        ),
+        explanationSimple: steps(
+          `mínimo común múltiplo de ${d} y ${f}: ${lcmDF}`,
+          `expandimos: ${multL}·(${coef(a)} ${sign(b)})`,
+          `${coef(fa)} ${sign(fb)} = ${multR}·(${coef(c)} ${sign(e)})`,
+          `expandimos: ${multR}·(${coef(c)} ${sign(e)})`,
+          `${coef(fa)} ${sign(fb)} = ${coef(dc)} ${sign(de)}`,
+          `el ${signedVal(fb)} pasa al otro lado como ${signedVal(-fb)}`,
+          `${coef(fa)} = ${coef(dc)} ${sign(de)} ${signedVal(-fb)}`,
+          `${coef(fa)} = ${coef(dc)} ${sign(de - fb)}`,
+          `el ${signedCoef(dc)} pasa al otro lado como ${signedCoef(-dc)}`,
+          `${coef(fa)} ${signedCoef(-dc)} = ${constR}`,
+          `${coef(coefX)} = ${constR}`,
+          ...divStepsSimple(coefX, constR)
         )
       };
     }
@@ -1062,6 +1272,20 @@
           `${coef(ab)} ${deNeg} = ${coef(de)} ${deNeg} ${sign(df - ac)}`,
           `${coef(coefX)} = ${constR}`,
           ...divSteps(coef(coefX), coefX, constR)
+        ),
+        explanationSimple: steps(
+          `el ${d} que está dividiendo pasa al otro lado multiplicando`,
+          `${a}(${inner2}) = (${coef(e)} ${sign(f)}) · ${d}`,
+          `${a}(${inner2}) = ${coef(de)} ${sign(df)}`,
+          `expandimos: ${a}(${inner2})`,
+          `${coef(ab)} ${sign(ac)} = ${coef(de)} ${sign(df)}`,
+          `el ${signedVal(ac)} pasa al otro lado como ${signedVal(-ac)}`,
+          `${coef(ab)} = ${coef(de)} ${sign(df)} ${signedVal(-ac)}`,
+          `${coef(ab)} = ${coef(de)} ${sign(df - ac)}`,
+          `el ${signedCoef(de)} pasa al otro lado como ${signedCoef(-de)}`,
+          `${coef(ab)} ${signedCoef(-de)} = ${constR}`,
+          `${coef(coefX)} = ${constR}`,
+          ...divStepsSimple(coefX, constR)
         )
       };
     }
@@ -1109,6 +1333,20 @@
           `${coef(a)} ${decNeg} = ${coef(dec)} ${decNeg} ${sign(def_ - b)}`,
           `${coef(coefX)} = ${constR}`,
           ...divSteps(coef(coefX), coefX, constR)
+        ),
+        explanationSimple: steps(
+          `el ${d} que está dividiendo pasa al otro lado multiplicando`,
+          `${coef(a)} ${sign(b)} = ${e}(${inner2}) · ${d}`,
+          `${coef(a)} ${sign(b)} = ${de}(${inner2})`,
+          `expandimos: ${de}(${inner2})`,
+          `${coef(a)} ${sign(b)} = ${coef(dec)} ${sign(def_)}`,
+          `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`,
+          `${coef(a)} = ${coef(dec)} ${sign(def_)} ${signedVal(-b)}`,
+          `${coef(a)} = ${coef(dec)} ${sign(def_ - b)}`,
+          `el ${signedCoef(dec)} pasa al otro lado como ${signedCoef(-dec)}`,
+          `${coef(a)} ${signedCoef(-dec)} = ${constR}`,
+          `${coef(coefX)} = ${constR}`,
+          ...divStepsSimple(coefX, constR)
         )
       };
     }
@@ -1159,6 +1397,19 @@
         `${coef(acd)} ${deNeg} = ${coef(de)} ${deNeg} ${sign(df - b)}`,
         `${coef(coefX)} = ${constR}`,
         ...divSteps(coef(coefX), coefX, constR)
+      ),
+      explanationSimple: steps(
+        `el ${d} que está dividiendo pasa al otro lado multiplicando`,
+        `${coef(a)} ${sign(b)} ${sign(cd)}x = ${coef(de)} ${sign(df)}`,
+        `combinamos términos con x: ${coef(a)} ${sign(cd)}x = ${coef(acd)}`,
+        `${coef(acd)} ${sign(b)} = ${coef(de)} ${sign(df)}`,
+        `el ${signedVal(b)} pasa al otro lado como ${signedVal(-b)}`,
+        `${coef(acd)} = ${coef(de)} ${sign(df)} ${signedVal(-b)}`,
+        `${coef(acd)} = ${coef(de)} ${sign(df - b)}`,
+        `el ${signedCoef(de)} pasa al otro lado como ${signedCoef(-de)}`,
+        `${coef(acd)} ${signedCoef(-de)} = ${constR}`,
+        `${coef(coefX)} = ${constR}`,
+        ...divStepsSimple(coefX, constR)
       )
     };
   }
@@ -1247,6 +1498,28 @@
   const elLevelBadge  = document.getElementById('level-badge');
   const elLevelMenu   = document.getElementById('level-menu');
   const elLevelOptions = elLevelMenu.querySelectorAll('.level-option');
+  const elExplanationMode = document.getElementById('explanation-mode');
+
+  // Persist explanation toggle
+  const EXPL_KEY = 'math_expl_detailed';
+  elExplanationMode.checked = localStorage.getItem(EXPL_KEY) !== 'false';
+
+  function currentExpl() {
+    return elExplanationMode.checked
+      ? currentProblem.explanation
+      : (currentProblem.explanationSimple || currentProblem.explanation);
+  }
+
+  elExplanationMode.addEventListener('change', () => {
+    localStorage.setItem(EXPL_KEY, elExplanationMode.checked);
+    // Re-render explanation if feedback is already visible
+    if (!currentProblem || elFeedback.className === '') return;
+    if (elFeedback.className === 'correct') {
+      elFeedback.innerHTML = `<strong>¡Correcto!</strong>${currentExpl() || ''}`;
+    } else {
+      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${displayAnswer(currentProblem.answer)}</strong>${currentExpl() || ''}`;
+    }
+  });
   const elDisplay   = document.getElementById('answer-display');
   const elKeypad    = document.getElementById('keypad');
 
@@ -1350,12 +1623,12 @@
       registerCorrect();
       refreshHeader();
       elFeedback.className = 'correct';
-      elFeedback.innerHTML = `<strong>¡Correcto!</strong>${currentProblem.explanation || ''}`;
+      elFeedback.innerHTML = `<strong>¡Correcto!</strong>${currentExpl() || ''}`;
       elNext.style.display = 'block';
     } else {
       registerWrong();
       elFeedback.className = 'wrong';
-      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${displayAnswer(currentProblem.answer)}</strong>${currentProblem.explanation || ''}`;
+      elFeedback.innerHTML = `<strong>Incorrecto.</strong> La respuesta correcta es <strong>x = ${displayAnswer(currentProblem.answer)}</strong>${currentExpl() || ''}`;
       elNext.style.display = 'block';
     }
   }

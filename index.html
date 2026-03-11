@@ -267,6 +267,7 @@
         <button class="level-option" data-level="2" role="menuitem"><span class="level-dot"></span>Nivel 2 — dos pasos y fracciones</button>
         <button class="level-option" data-level="3" role="menuitem"><span class="level-dot"></span>Nivel 3 — paréntesis y dos lados</button>
         <button class="level-option" data-level="4" role="menuitem"><span class="level-dot"></span>Nivel 4 — complejidad combinada</button>
+        <button class="level-option" data-level="5" role="menuitem"><span class="level-dot"></span>Nivel 5 — fracciones</button>
       </div>
     </div>
     <div id="problem"></div>
@@ -625,16 +626,122 @@
     }
   }
 
-  // ── Dispatcher (4 levels) ────────────────────────
+  // ── Level 5: fracciones  ─────────────────────────
+  // Type A: (ax + b) / d = c          — whole left side as fraction
+  // Type B: ax/d + b = c              — just the x-term is a fraction
+  // Type C: (ax + b) / d = cx + e     — fraction on left, x on both sides
+  function genLevel7() {
+    const type = Math.floor(Math.random() * 3);
+
+    if (type === 0) {
+      // (ax + b) / d = c  →  ax + b = c*d  →  ax = c*d - b  →  x = (c*d - b)/a
+      const d = rnd(2, 6);
+      const a = rndNZ(5);
+      const x = rnd(-8, 8, true);
+      const b = rnd(-10, 10, true);
+      const cd = a * x + b;          // c*d
+      if (cd % d !== 0) return genLevel7();
+      const c = cd / d;
+      const rhs = cd - b;            // a*x
+      const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
+      const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
+      return {
+        display: `${frac(`${coef(a)} ${sign(b)}`, d)} = ${c}`,
+        answer: x,
+        explanation: steps(
+          `multiplicamos ambos lados por ${d}`,
+          `${frac(`${coef(a)} ${sign(b)}`, d)} × ${d} = ${c} × ${d}`,
+          `${coef(a)} ${sign(b)} = ${cd}`,
+          moveB,
+          `${coef(a)} ${sign(b)} ${negB} = ${cd} ${negB}`,
+          `${coef(a)} = ${rhs}`,
+          ...divSteps(coef(a), a, rhs)
+        )
+      };
+    }
+
+    if (type === 1) {
+      // ax/d + b = c  →  ax/d = c - b  →  ax = (c-b)*d  →  x = (c-b)*d / a
+      const d = rnd(2, 6);
+      const a = rndNZ(5);
+      const x = rnd(-8, 8, true);
+      if ((a * x) % d !== 0) return genLevel7(); // ensure ax/d is integer for display clarity
+      const b = rnd(-10, 10, true);
+      const c = (a * x) / d + b;
+      const cb = c - b;             // ax/d value
+      const rhs = cb * d;           // ax
+      const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
+      const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
+      const axFrac = a === 1 ? frac('x', d) : a === -1 ? frac('-x', d) : frac(`${a}x`, d);
+      return {
+        display: `${axFrac} ${sign(b)} = ${c}`,
+        answer: x,
+        explanation: steps(
+          moveB,
+          `${axFrac} ${sign(b)} ${negB} = ${c} ${negB}`,
+          `${axFrac} = ${cb}`,
+          `multiplicamos ambos lados por ${d}`,
+          `${axFrac} × ${d} = ${cb} × ${d}`,
+          `${coef(a)} = ${rhs}`,
+          ...divSteps(coef(a), a, rhs)
+        )
+      };
+    }
+
+    // type === 2
+    // (ax + b) / d = cx + e  →  ax + b = (cx + e)*d  →  ax + b = cdx + ed
+    // →  (a - cd)x = ed - b
+    const d = rnd(2, 5);
+    const a = rndNZ(5);
+    let cCoef;
+    do { cCoef = rndNZ(4); } while (cCoef === a);
+    const x = rnd(-6, 6, true);
+    const b = rnd(-8, 8, true);
+    const e = rnd(-8, 8, true);
+    const lhsNum = a * x + b;        // numerator of left fraction
+    if (lhsNum % d !== 0) return genLevel7();
+    const rhsVal = lhsNum / d;       // must equal cx + e
+    if (rhsVal !== cCoef * x + e) return genLevel7();
+    const cd = cCoef * d;
+    const ed = e * d;
+    const coefDiff = a - cd;         // coefficient of x after multiply
+    if (coefDiff === 0) return genLevel7();
+    const constDiff = ed - b;        // rhs constant after rearranging
+    if (constDiff % coefDiff !== 0) return genLevel7();
+    const negB = b >= 0 ? `− ${b}` : `+ ${Math.abs(b)}`;
+    const moveB = b >= 0 ? `restamos ${b} a ambos lados` : `sumamos ${Math.abs(b)} a ambos lados`;
+    const cNeg = cd > 0 ? `− ${coef(cd)}` : `+ ${coef(Math.abs(cd))}`;
+    const moveX = cd > 0 ? `restamos ${coef(cd)} a ambos lados` : `sumamos ${coef(Math.abs(cd))} a ambos lados`;
+    return {
+      display: `${frac(`${coef(a)} ${sign(b)}`, d)} = ${coef(cCoef)} ${sign(e)}`,
+      answer: x,
+      explanation: steps(
+        `multiplicamos ambos lados por ${d}`,
+        `${frac(`${coef(a)} ${sign(b)}`, d)} × ${d} = (${coef(cCoef)} ${sign(e)}) × ${d}`,
+        `${coef(a)} ${sign(b)} = ${coef(cd)} ${sign(ed)}`,
+        moveB,
+        `${coef(a)} ${sign(b)} ${negB} = ${coef(cd)} ${sign(ed)} ${negB}`,
+        `${coef(a)} = ${coef(cd)} ${sign(ed - b)}`,
+        moveX,
+        `${coef(a)} ${cNeg} = ${coef(cd)} ${cNeg} ${sign(ed - b)}`,
+        `${coef(coefDiff)} = ${constDiff}`,
+        ...divSteps(coef(coefDiff), coefDiff, constDiff)
+      )
+    };
+  }
+
+  // ── Dispatcher (5 levels) ────────────────────────
   // Level 1: one-step equations
-  // Level 2: two-step equations + fractions
+  // Level 2: two-step equations + simple fractions
   // Level 3: parentheses + variables on both sides
   // Level 4: combined complexity
+  // Level 5: fracciones — fractions in the equation from the start
   function generateProblem(level) {
     if (level <= 1) return genLevel1();
     if (level <= 2) return Math.random() < 0.5 ? genLevel2() : genLevel3();
     if (level <= 3) return Math.random() < 0.5 ? genLevel4() : genLevel5();
-    return genLevel6();
+    if (level <= 4) return genLevel6();
+    return genLevel7();
   }
 
   // ════════════════════════════════════════════════
@@ -664,7 +771,7 @@
   const CORRECT_FOR_LEVELUP = 10;
 
   function pointsForLevel(level) {
-    return level <= 1 ? 5 : level <= 2 ? 10 : level <= 3 ? 15 : 20;
+    return level <= 1 ? 5 : level <= 2 ? 10 : level <= 3 ? 15 : level <= 4 ? 20 : 25;
   }
 
   // Returns true if a level-up occurred
